@@ -1,0 +1,472 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRADELAB AI | Trading Laboratory</title>
+<style>
+:root {
+  --bg:#080e18;
+  --panel:#111c2b;
+  --panel2:#172438;
+  --line:#26364b;
+  --text:#edf4ff;
+  --muted:#91a3ba;
+  --green:#19c995;
+  --red:#fa6575;
+  --blue:#5a9cff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Arial,sans-serif;
+}
+header{
+  padding:18px 5%;display:flex;justify-content:space-between;
+  align-items:center;border-bottom:1px solid var(--line);
+  background:#0c1522;position:sticky;top:0;z-index:5;
+}
+.logo{font-size:21px;font-weight:900;letter-spacing:1px}
+.logo span{color:var(--green)}
+.status{font-size:11px;color:var(--green);border:1px solid #176d58;padding:7px;border-radius:20px}
+main{max-width:1200px;margin:auto;padding:24px 16px}
+h1{font-size:27px;margin:5px 0}
+p{color:var(--muted);line-height:1.5}
+.section{margin-top:25px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.panel,.metric{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:13px;padding:17px;
+}
+.metric small,.muted{color:var(--muted);font-size:12px}
+.metric strong{display:block;font-size:25px;margin-top:10px}
+.green{color:var(--green)}
+.red{color:var(--red)}
+.controls{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px
+}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
+select,input{
+  width:100%;background:#0a1422;color:white;
+  border:1px solid var(--line);border-radius:8px;
+  padding:12px;font-size:14px;
+}
+button{
+  border:0;border-radius:8px;padding:13px 17px;
+  background:var(--green);color:#06150f;
+  font-weight:bold;cursor:pointer;font-size:14px;
+}
+button:active{opacity:.75}
+.primary{width:100%;margin-top:17px}
+.chartbox{height:270px;width:100%;margin-top:12px}
+canvas{width:100%;height:100%}
+.tag{
+  font-size:11px;padding:5px 9px;border-radius:20px;
+  background:#1b3043;color:#9bbde0;
+}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:12px 7px;border-bottom:1px solid var(--line)}
+th{color:var(--muted)}
+.notice{
+  background:#282313;color:#e8d59d;
+  border:1px solid #655323;border-radius:9px;
+  padding:12px;font-size:12px;line-height:1.6
+}
+nav{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+nav a{color:var(--muted);text-decoration:none;padding:8px;font-size:12px}
+footer{text-align:center;color:var(--muted);padding:30px;font-size:12px}
+@media(max-width:650px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .controls{grid-template-columns:1fr}
+  header{padding:15px}
+  main{padding:18px 12px}
+  .metric strong{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TRADE<span>LAB</span> AI</div>
+  <div class="status">● DEMO VERSION</div>
+</header>
+
+<main>
+  <section>
+    <h1>Trading Laboratory</h1>
+    <p>Build. Backtest. Analyse. Improve.</p>
+    <div class="notice">
+      DEMO MODE: This version uses simulated prices, not real market data.
+      Results are educational examples and are not trading recommendations.
+    </div>
+  </section>
+
+  <nav>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#backtester">Backtester</a>
+    <a href="#chart">Market Chart</a>
+    <a href="#results">Results</a>
+  </nav>
+
+  <section class="section" id="dashboard">
+    <h2>Performance Overview</h2>
+    <div class="grid">
+      <div class="metric">
+        <small>Win Rate</small>
+        <strong class="green" id="winrate">--</strong>
+      </div>
+      <div class="metric">
+        <small>Total Trades</small>
+        <strong id="total">--</strong>
+      </div>
+      <div class="metric">
+        <small>Profit Factor</small>
+        <strong id="factor">--</strong>
+      </div>
+      <div class="metric">
+        <small>Max Drawdown</small>
+        <strong class="red" id="drawdown">--</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="section panel" id="backtester">
+    <h2>Strategy Backtester</h2>
+    <p>Configure your trading strategy and run a simulation.</p>
+
+    <div class="controls">
+      <div>
+        <label>Market</label>
+        <select id="market">
+          <option>Forex</option>
+          <option>Crypto</option>
+          <option>Gold</option>
+          <option>Indices</option>
+          <option>Stocks</option>
+        </select>
+      </div>
+      <div>
+        <label>Trading Pair / Symbol</label>
+        <select id="symbol">
+          <option>EUR/USD</option>
+          <option>GBP/USD</option>
+          <option>USD/JPY</option>
+          <option>BTC/USDT</option>
+          <option>ETH/USDT</option>
+          <option>XAU/USD</option>
+          <option>NASDAQ</option>
+          <option>S&P 500</option>
+          <option>AAPL</option>
+          <option>TSLA</option>
+        </select>
+      </div>
+      <div>
+        <label>Timeframe</label>
+        <select id="timeframe">
+          <option>5 Minutes</option>
+          <option selected>15 Minutes</option>
+          <option>1 Hour</option>
+          <option>4 Hours</option>
+          <option>1 Day</option>
+        </select>
+      </div>
+      <div>
+        <label>Fast EMA</label>
+        <input id="fast" type="number" value="20" min="2" max="100">
+      </div>
+      <div>
+        <label>Slow EMA</label>
+        <input id="slow" type="number" value="50" min="3" max="200">
+      </div>
+      <div>
+        <label>RSI Period</label>
+        <input id="rsi" type="number" value="14" min="2" max="50">
+      </div>
+      <div>
+        <label>Initial Capital ($)</label>
+        <input id="capital" type="number" value="10000" min="100">
+      </div>
+      <div>
+        <label>Trading Fee per Side (%)</label>
+        <input id="fee" type="number" value="0.05" min="0" max="2" step="0.01">
+      </div>
+      <div>
+        <label>Simulation Candles</label>
+        <select id="candles">
+          <option value="500">500</option>
+          <option value="1000" selected>1000</option>
+          <option value="2000">2000</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="primary" onclick="runBacktest()">▶ RUN BACKTEST</button>
+    <p id="message" class="muted">Ready to test your strategy.</p>
+  </section>
+
+  <section class="section panel" id="chart">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Market Chart</h2>
+      <span class="tag">SIMULATED DATA</span>
+    </div>
+    <div class="chartbox">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+    <p class="muted">Green markers = entries. Red markers = exits.</p>
+  </section>
+
+  <section class="section panel" id="results">
+    <h2>Backtest Analysis</h2>
+    <div class="grid">
+      <div class="metric">
+        <small>Net Profit / Loss</small>
+        <strong id="profit">--</strong>
+      </div>
+      <div class="metric">
+        <small>Winning Trades</small>
+        <strong id="wins">--</strong>
+      </div>
+      <div class="metric">
+        <small>Losing Trades</small>
+        <strong id="losses">--</strong>
+      </div>
+      <div class="metric">
+        <small>Ending Balance</small>
+        <strong id="balance">--</strong>
+      </div>
+    </div>
+    <h3>Recent Trades</h3>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Trade</th>
+            <th>Entry</th>
+            <th>Exit</th>
+            <th>Result</th>
+            <th>P/L</th>
+          </tr>
+        </thead>
+        <tbody id="trades">
+          <tr><td colspan="5">Run a backtest to see results.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section panel">
+    <h2>Live Strategy Testing</h2>
+    <span class="tag">COMING NEXT</span>
+    <p>Monitor strategies against real-time market prices, simulate trades and track performance without risking real money.</p>
+    <button disabled style="background:#26364b;color:#91a3ba">Live feed not connected</button>
+  </section>
+
+  <section class="section panel">
+    <h2>AI Strategy Analyst</h2>
+    <span class="tag">COMING NEXT</span>
+    <p>Our future AI analyst will explain strategy performance, identify weaknesses and compare trading parameters.</p>
+  </section>
+</main>
+
+<footer>
+  TRADELAB AI © 2026<br><br>
+  Test Before You Trade.
+</footer>
+
+<script>
+let lastData = null;
+let lastTrades = [];
+
+function ema(data, period) {
+  let result = Array(data.length).fill(null);
+  let alpha = 2 / (period + 1);
+  let value = data[0];
+  result[0] = value;
+  for(let i=1;i<data.length;i++){
+    value = data[i]*alpha + value*(1-alpha);
+    result[i] = value;
+  }
+  return result;
+}
+
+function rsi(data, period) {
+  let result = Array(data.length).fill(50);
+  let gains=0, losses=0;
+  for(let i=1;i<=period;i++){
+    let change=data[i]-data[i-1];
+    gains+=Math.max(change,0);
+    losses+=Math.max(-change,0);
+  }
+  let avgG=gains/period, avgL=losses/period;
+  for(let i=period;i<data.length;i++){
+    if(i>period){
+      let change=data[i]-data[i-1];
+      avgG=(avgG*(period-1)+Math.max(change,0))/period;
+      avgL=(avgL*(period-1)+Math.max(-change,0))/period;
+    }
+    result[i]=avgL===0?100:100-(100/(1+avgG/avgL));
+  }
+  return result;
+}
+
+function money(n) {
+  return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function generatePrices(n) {
+  let prices=[100], trend=0;
+  for(let i=1;i<n;i++){
+    if(i%90===0) trend=(Math.random()-.5)*.13;
+    let move=(Math.random()-.49)*.65+trend;
+    prices.push(Math.max(5,prices[i-1]+move));
+  }
+  return prices;
+}
+
+function runBacktest(){
+  let fast=+document.getElementById("fast").value;
+  let slow=+document.getElementById("slow").value;
+  let period=+document.getElementById("rsi").value;
+  let capital=+document.getElementById("capital").value;
+  let fee=+document.getElementById("fee").value/100;
+  let n=+document.getElementById("candles").value;
+
+  if(!fast||!slow||!period||fast>=slow||capital<=0||fee<0||n<=slow+period){
+    document.getElementById("message").textContent=
+      "Please check your settings. Fast EMA must be smaller than Slow EMA.";
+    return;
+  }
+
+  let prices=generatePrices(n);
+  let fastEMA=ema(prices,fast);
+  let slowEMA=ema(prices,slow);
+  let rs=rsi(prices,period);
+  let position=null, trades=[], markers=[];
+
+  for(let i=1;i<n;i++){
+    let buy=fastEMA[i]>slowEMA[i] &&
+      fastEMA[i-1]<=slowEMA[i-1] && rs[i]>50;
+    let sell=fastEMA[i]<slowEMA[i] &&
+      fastEMA[i-1]>=slowEMA[i-1] && rs[i]<50;
+
+    if(!position && buy){
+      position={index:i,price:prices[i]};
+      markers.push({index:i,type:"buy"});
+    }else if(position && sell){
+      let gross=(prices[i]-position.price)/position.price;
+      let net=gross-2*fee;
+      trades.push({
+        entry:position.price,exit:prices[i],
+        pnl:capital/Math.max(1,capital)*net,
+        percent:net*100,
+        entryIndex:position.index,exitIndex:i
+      });
+      markers.push({index:i,type:"sell"});
+      position=null;
+    }
+  }
+
+  if(position){
+    let i=n-1;
+    let net=(prices[i]-position.price)/position.price-2*fee;
+    trades.push({
+      entry:position.price,exit:prices[i],
+      pnl:net,percent:net*100,
+      entryIndex:position.index,exitIndex:i
+    });
+    markers.push({index:i,type:"sell"});
+  }
+
+  let wins=trades.filter(t=>t.percent>0).length;
+  let losses=trades.length-wins;
+  let grossWin=trades.filter(t=>t.percent>0).reduce((a,t)=>a+t.percent,0);
+  let grossLoss=Math.abs(trades.filter(t=>t.percent<0).reduce((a,t)=>a+t.percent,0));
+  let balance=capital,peak=capital,maxDD=0;
+  let actualTrades=trades.map(t=>{
+    let pnl=balance*t.percent/100;
+    balance+=pnl;
+    peak=Math.max(peak,balance);
+    maxDD=Math.max(maxDD,(peak-balance)/peak*100);
+    return {...t,actualPnl:pnl};
+  });
+
+  let net=balance-capital;
+  let winRate=trades.length?wins/trades.length*100:0;
+  let profitFactor=grossLoss===0?(grossWin>0?Infinity:0):grossWin/grossLoss;
+
+  document.getElementById("winrate").textContent=winRate.toFixed(1)+"%";
+  document.getElementById("total").textContent=trades.length;
+  document.getElementById("factor").textContent=
+    profitFactor===Infinity?"∞":profitFactor.toFixed(2);
+  document.getElementById("drawdown").textContent=maxDD.toFixed(2)+"%";
+  document.getElementById("profit").textContent=money(net);
+  document.getElementById("profit").className=net>=0?"green":"red";
+  document.getElementById("wins").textContent=wins;
+  document.getElementById("losses").textContent=losses;
+  document.getElementById("balance").textContent=money(balance);
+
+  let rows=actualTrades.slice(-10).reverse().map((t,i)=>`
+    <tr>
+      <td>${actualTrades.length-i}</td>
+      <td>${t.entry.toFixed(2)}</td>
+      <td>${t.exit.toFixed(2)}</td>
+      <td class="${t.percent>=0?'green':'red'}">${t.percent>=0?'WIN':'LOSS'}</td>
+      <td class="${t.actualPnl>=0?'green':'red'}">${money(t.actualPnl)}</td>
+    </tr>`).join("");
+
+  document.getElementById("trades").innerHTML=
+    rows||'<tr><td colspan="5">No completed trades found.</td></tr>';
+
+  document.getElementById("message").textContent=
+    "Backtest completed on simulated "+document.getElementById("symbol").value+
+    " data using "+document.getElementById("timeframe").value+
+    " settings. Results are not real market performance.";
+
+  lastData=prices;
+  lastTrades=markers;
+  drawChart();
+}
+
+function drawChart(){
+  if(!lastData)return;
+  let canvas=document.getElementById("chartCanvas");
+  let box=canvas.getBoundingClientRect();
+  let dpr=window.devicePixelRatio||1;
+  canvas.width=box.width*dpr;
+  canvas.height=box.height*dpr;
+  let ctx=canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
+  let w=box.width,h=box.height;
+  let min=Math.min(...lastData),max=Math.max(...lastData);
+  let pad=18;
+  let x=i=>pad+i/(lastData.length-1)*(w-pad*2);
+  let y=v=>h-pad-(v-min)/(max-min||1)*(h-pad*2);
+
+  ctx.strokeStyle="#26364b";
+  ctx.lineWidth=1;
+  for(let i=0;i<5;i++){
+    let yy=pad+i*(h-pad*2)/4;
+    ctx.beginPath();ctx.moveTo(pad,yy);ctx.lineTo(w-pad,yy);ctx.stroke();
+  }
+  ctx.beginPath();
+  lastData.forEach((v,i)=>{
+    if(i===0)ctx.moveTo(x(i),y(v));
+    else ctx.lineTo(x(i),y(v));
+  });
+  ctx.strokeStyle="#5a9cff";
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  lastTrades.forEach(m=>{
+    ctx.beginPath();
+    ctx.arc(x(m.index),y(lastData[m.index]),4,0,Math.PI*2);
+    ctx.fillStyle=m.type==="buy"?"#19c995":"#fa6575";
+    ctx.fill();
+  });
+}
+
+window.addEventListener("resize",drawChart);
+</script>
+</body>
+</html>
