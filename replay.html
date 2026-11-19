@@ -180,6 +180,40 @@ label{display:block;color:#94a3b8;font-size:12px;margin:9px 0 5px}
   </section>
  </div>
  </div>
+ 
+<section class="panel" id="historicalBacktest">
+  <h3>Historical Data Backtesting</h3>
+  <p class="muted">Import historical candle data to test strategies against past market movements.</p>
+
+  <label for="csvFile">Upload Historical CSV Data</label>
+  <input type="file" id="csvFile" accept=".csv,text/csv">
+
+  <p class="notice">
+    Required CSV columns: time, open, high, low, close.
+    Optional column: volume.
+  </p>
+
+  <div class="controls">
+    <button id="loadCSV">Load Historical Data</button>
+    <button id="clearCSV">Clear Imported Data</button>
+  </div>
+
+  <p class="muted" id="csvStatus">No historical data loaded.</p>
+
+  <div class="controls">
+    <button id="historicalPlay">▶ Replay</button>
+    <button id="historicalPause">Ⅱ Pause</button>
+    <button id="historicalNext">Next Candle →</button>
+    <select id="historicalSpeed">
+      <option value="1000">1x Speed</option>
+      <option value="500">2x Speed</option>
+      <option value="200">5x Speed</option>
+    </select>
+  </div>
+
+  <p class="muted" id="historicalProgress">Historical replay not started.</p>
+</section>
+ 
  <section class="panel">
   <h3>System Status</h3>
   <p class="muted" id="status">Simulation initialized.</p>
@@ -415,6 +449,236 @@ $("rsiToggle").addEventListener("click",()=>{showRSI=!showRSI;$("rsiToggle").cla
 $("speed").addEventListener("change",()=>{if(timer){pause();play()}});
 window.addEventListener("resize",resize);
 
+// ===== TRADELAB AI v2.1: HISTORICAL CSV ENGINE =====
+
+let historicalCandles = [];
+let historicalPosition = 0;
+let historicalTimer = null;
+
+function parseCSVLine(line) {
+  const values = [];
+  let current = "";
+  let quoted = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (quoted && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === "," && !quoted) {
+      values.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function stopHistoricalReplay() {
+  if (historicalTimer) {
+    clearInterval(historicalTimer);
+    historicalTimer = null;
+  }
+}
+
+function updateHistoricalProgress() {
+  const progress = document.getElementById("historicalProgress");
+
+  if (!historicalCandles.length) {
+    progress.textContent = "Historical replay not started.";
+    return;
+  }
+
+  progress.textContent =
+    "Candle " + (historicalPosition + 1) +
+    " of " + historicalCandles.length +
+    " | Time: " +
+    historicalCandles[historicalPosition].time;
+}
+
+document.getElementById("loadCSV").addEventListener("click", function () {
+  const fileInput = document.getElementById("csvFile");
+  const status = document.getElementById("csvStatus");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    status.textContent = "Please select a CSV file first.";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function (event) {
+    try {
+      const lines = event.target.result
+        .replace(/^\uFEFF/, "")
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== "");
+
+      if (lines.length < 2) {
+        throw new Error("The CSV file has no candle data.");
+      }
+
+      const headers = parseCSVLine(lines[0])
+        .map(header => header.toLowerCase().trim());
+
+      const timeIndex = headers.findIndex(
+        h => ["time", "date", "timestamp", "datetime"].includes(h)
+      );
+
+      const openIndex = headers.indexOf("open");
+      const highIndex = headers.indexOf("high");
+      const lowIndex = headers.indexOf("low");
+      const closeIndex = headers.indexOf("close");
+
+      if ([timeIndex, openIndex, highIndex, lowIndex, closeIndex].includes(-1)) {
+        throw new Error(
+          "Required columns: time, open, high, low, close."
+        );
+      }
+
+      const imported = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+
+        const candle = {
+          time: values[timeIndex],
+          open: Number(values[openIndex]),
+          high: Number(values[highIndex]),
+          low: Number(values[lowIndex]),
+          close: Number(values[closeIndex]),
+          volume: headers.includes("volume")
+            ? Number(values[headers.indexOf("volume")]) || 0
+            : 0
+        };
+
+        if (
+          !candle.time ||
+          !Number.isFinite(candle.open) ||
+          !Number.isFinite(candle.high) ||
+          !Number.isFinite(candle.low) ||
+          !Number.isFinite(candle.close) ||
+          candle.open <= 0 ||
+          candle.high <= 0 ||
+          candle.low <= 0 ||
+          candle.close <= 0 ||
+          candle.high < Math.max(candle.open, candle.close, candle.low) ||
+          candle.low > Math.min(candle.open, candle.close, candle.high)
+        ) {
+          throw new Error("Invalid candle data on CSV row " + (i + 1) + ".");
+        }
+
+        imported.push(candle);
+      }
+
+      if (!imported.length) {
+        throw new Error("No valid historical candles were found.");
+      }
+
+      stopHistoricalReplay();
+      historicalCandles = imported;
+      historicalPosition = 0;
+
+      status.textContent =
+        "Successfully loaded " + imported.length +
+        " historical candles.";
+
+      updateHistoricalProgress();
+
+    } catch (error) {
+      status.textContent = "Import failed: " + error.message;
+    }
+  };
+
+  reader.onerror = function () {
+    status.textContent = "Unable to read this file.";
+  };
+
+  reader.readAsText(file);
+});
+
+document.getElementById("historicalPlay").addEventListener("click", function () {
+  if (!historicalCandles.length) {
+    document.getElementById("csvStatus").textContent =
+      "Upload historical CSV data first.";
+    return;
+  }
+
+  if (historicalPosition >= historicalCandles.length - 1) {
+    historicalPosition = 0;
+  }
+
+  stopHistoricalReplay();
+
+  const speed = Number(
+    document.getElementById("historicalSpeed").value
+  );
+
+  historicalTimer = setInterval(function () {
+    if (historicalPosition < historicalCandles.length - 1) {
+      historicalPosition++;
+      updateHistoricalProgress();
+    } else {
+      stopHistoricalReplay();
+      document.getElementById("csvStatus").textContent =
+        "Historical replay completed.";
+    }
+  }, speed);
+
+  document.getElementById("csvStatus").textContent =
+    "Historical replay is running.";
+});
+
+document.getElementById("historicalPause").addEventListener("click", function () {
+  stopHistoricalReplay();
+
+  document.getElementById("csvStatus").textContent =
+    "Historical replay paused.";
+});
+
+document.getElementById("historicalNext").addEventListener("click", function () {
+  stopHistoricalReplay();
+
+  if (!historicalCandles.length) {
+    document.getElementById("csvStatus").textContent =
+      "Upload historical CSV data first.";
+    return;
+  }
+
+  if (historicalPosition < historicalCandles.length - 1) {
+    historicalPosition++;
+    updateHistoricalProgress();
+  } else {
+    document.getElementById("csvStatus").textContent =
+      "You have reached the final candle.";
+  }
+});
+
+document.getElementById("clearCSV").addEventListener("click", function () {
+  stopHistoricalReplay();
+
+  historicalCandles = [];
+  historicalPosition = 0;
+
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvStatus").textContent =
+    "Historical data cleared.";
+
+  document.getElementById("historicalProgress").textContent =
+    "Historical replay not started.";
+});
+
+// ===== END HISTORICAL CSV ENGINE =====
+   
 generate();resize();draw();
 </script>
 </body>
