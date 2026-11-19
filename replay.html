@@ -3,237 +3,420 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TRADELAB AI - Historical Replay</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d18">
+<title>TRADELAB AI | Trading Terminal v2.0</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090e19;color:#e5e7eb;font-family:Arial,sans-serif;padding:18px}
-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-h1{font-size:22px;color:#38bdf8}
-.panel{background:#111b2d;border:1px solid #25334a;border-radius:12px;padding:15px;margin-top:16px}
-.controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
-button,select,input{background:#1d2b42;color:white;border:1px solid #344762;padding:11px;border-radius:7px}
+body{margin:0;background:#080d18;color:#e5e7eb;font-family:Arial,sans-serif;font-size:14px}
+header{background:#101a2b;padding:15px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid #26364d}
+.brand{font-size:22px;font-weight:bold;color:#38bdf8}
+.sub{color:#94a3b8;font-size:11px}
+main{padding:12px;max-width:1500px;margin:auto}
+.panel{background:#111c2e;border:1px solid #273750;border-radius:10px;padding:13px;margin-bottom:12px}
+h3{font-size:15px;margin:0 0 12px}
+select,input,button{background:#1b2a40;color:white;border:1px solid #394d68;padding:10px;border-radius:6px;font-size:13px;max-width:100%}
 button{cursor:pointer}
-button:hover{background:#2563eb}
-#chart{width:100%;height:330px;background:#0b1423;border-radius:8px}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.stat{background:#1a2940;padding:13px;border-radius:8px}
-.stat small{color:#94a3b8}
-.stat strong{display:block;font-size:20px;margin-top:7px}
-.green{color:#22c55e}.red{color:#ef4444}
-table{width:100%;border-collapse:collapse;font-size:13px}
-td,th{text-align:left;padding:10px;border-bottom:1px solid #344762}
+button:active{opacity:.75}
+button:disabled{opacity:.4}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.quote{background:#0b1526;padding:13px;border-radius:8px;min-width:0}
+.quote small,.metric small{color:#94a3b8;display:block;margin-bottom:7px}
+.quote strong{font-size:19px;font-variant-numeric:tabular-nums}
+.bid{color:#ef7777}.ask{color:#36d399}
+.metric{background:#192941;padding:12px;border-radius:8px;min-width:0}
+.metric strong{font-size:19px;display:block;margin-top:5px;overflow-wrap:anywhere}
+.muted{color:#94a3b8}
+.positive{color:#34d399!important}
+.negative{color:#fb7185!important}
+#chart{width:100%;height:340px;display:block;background:#091321;border-radius:7px}
+.charttools{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.charttools button.active{background:#2563eb}
+table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid #2b3c54}
+th{color:#94a3b8}
 .scroll{overflow-x:auto}
+.buy{background:#087c59;border-color:#087c59;font-weight:bold}
+.sell{background:#b83245;border-color:#b83245;font-weight:bold}
+.close{background:#7c2d3b}
+.full{width:100%}
+input[type=number]{width:100%}
+label{display:block;color:#94a3b8;font-size:12px;margin:9px 0 5px}
+.notice{color:#fbbf24;font-size:11px;line-height:1.5}
+.positionline{color:#38bdf8}
+@media(min-width:850px){
+ main{padding:18px}
+ .layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px}
+ .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
 </style>
 </head>
 <body>
 <header>
-<h1>TRADELAB AI</h1>
-<span>HISTORICAL REPLAY v1.0</span>
+ <div>
+  <div class="brand">TRADELAB AI</div>
+  <div class="sub">PROFESSIONAL TRADING TERMINAL v2.0</div>
+ </div>
+ <div><span class="positive">● SIMULATION</span></div>
 </header>
 
-<div class="panel">
-<h3>Market Configuration</h3>
-<div class="controls">
-<select id="market">
-<option>Forex</option><option>Crypto</option>
-<option>Gold</option><option>Indices</option><option>Stocks</option>
-</select>
-<select id="symbol">
-<option>EURUSD</option><option>GBPUSD</option>
-<option>BTCUSD</option><option>XAUUSD</option>
-<option>US30</option><option>NASDAQ</option>
-</select>
-<select id="timeframe">
-<option>1 Minute</option><option>5 Minutes</option>
-<option>15 Minutes</option><option>1 Hour</option>
-<option>4 Hours</option><option>1 Day</option>
-</select>
-<button onclick="resetReplay()">Load Replay</button>
-</div>
-<p id="status">SIMULATED HISTORICAL DATA — NOT LIVE MARKET DATA</p>
-</div>
+<main>
+ <section class="panel">
+  <h3>Market Selection</h3>
+  <div class="controls">
+   <select id="market">
+    <option>Forex</option><option>Crypto</option>
+    <option>Gold</option><option>Indices</option><option>Stocks</option>
+   </select>
+   <select id="symbol">
+    <option>EURUSD</option><option>GBPUSD</option>
+    <option>USDJPY</option><option>BTCUSD</option>
+    <option>ETHUSD</option><option>XAUUSD</option>
+    <option>US30</option><option>NAS100</option>
+    <option>AAPL</option><option>TSLA</option>
+   </select>
+   <select id="timeframe">
+    <option value="1m">1 Minute</option>
+    <option value="5m">5 Minutes</option>
+    <option value="15m">15 Minutes</option>
+    <option value="1h">1 Hour</option>
+    <option value="4h">4 Hours</option>
+    <option value="1d">1 Day</option>
+   </select>
+   <button id="reset">Reset Simulation</button>
+  </div>
+ </section>
 
-<div class="panel">
-<h3>Price Chart</h3>
-<canvas id="chart"></canvas>
-<div class="controls">
-<button onclick="play()">▶ Play</button>
-<button onclick="pause()">Ⅱ Pause</button>
-<button onclick="step()">Next Candle →</button>
-<button onclick="rewind()">← Previous</button>
-<select id="speed">
-<option value="1000">1x</option>
-<option value="500">2x</option>
-<option value="200">5x</option>
-</select>
-</div>
-<input id="progress" type="range" min="0" max="99" value="0" style="width:100%;margin-top:15px" oninput="seek(this.value)">
-<p id="candleInfo">Waiting for replay...</p>
-</div>
+ <section class="grid">
+  <div class="quote">
+   <small>BID — SELL PRICE</small>
+   <strong class="bid" id="bid">1.10000</strong>
+  </div>
+  <div class="quote">
+   <small>ASK — BUY PRICE</small>
+   <strong class="ask" id="ask">1.10015</strong>
+  </div>
+  <div class="metric">
+   <small>Spread</small><strong id="spread">1.5 pips</strong>
+  </div>
+  <div class="metric">
+   <small>Last Price</small><strong id="last">1.10008</strong>
+  </div>
+ </section>
 
-<div class="panel">
-<h3>Trading Simulator</h3>
-<div class="controls">
-<input id="quantity" type="number" value="1" min="0.01" step="0.01" placeholder="Quantity">
-<button onclick="trade('BUY')">BUY</button>
-<button onclick="trade('SELL')">SELL</button>
-<button onclick="closeTrade()">Close Position</button>
-</div>
-<p>Stop Loss / Take Profit are not yet enabled in this version.</p>
-</div>
+ <div class="layout" style="margin-top:12px">
+ <div>
+  <section class="panel">
+   <h3 id="chartTitle">EURUSD — Price Chart</h3>
+   <div class="charttools">
+    <button class="active" id="ema20">EMA 20: ON</button>
+    <button class="active" id="ema50">EMA 50: ON</button>
+    <button class="active" id="rsiToggle">RSI: ON</button>
+   </div>
+   <canvas id="chart"></canvas>
+   <div class="controls" style="margin-top:10px">
+    <button id="play">▶ Play</button>
+    <button id="pause">Ⅱ Pause</button>
+    <button id="next">Next Candle →</button>
+    <button id="previous">← Previous</button>
+    <select id="speed">
+     <option value="1000">1x</option>
+     <option value="500">2x</option>
+     <option value="200">5x</option>
+    </select>
+   </div>
+   <input id="progress" type="range" min="0" max="99" value="99" class="full" style="margin-top:12px">
+   <div class="muted" id="chartInfo">Simulation loading...</div>
+   <div class="muted" id="rsiValue" style="margin-top:8px">RSI: --</div>
+  </section>
 
-<div class="panel">
-<h3>Performance Dashboard</h3>
-<div class="stats">
-<div class="stat"><small>Account Balance</small><strong id="balance">$10,000</strong></div>
-<div class="stat"><small>Open P/L</small><strong id="openPL">$0.00</strong></div>
-<div class="stat"><small>Closed Trades</small><strong id="closed">0</strong></div>
-<div class="stat"><small>Win Rate</small><strong id="winrate">0%</strong></div>
-</div>
-</div>
+  <section class="panel">
+   <h3>Open Positions</h3>
+   <div class="scroll">
+    <table>
+     <thead><tr><th>Symbol</th><th>Side</th><th>Size</th><th>Entry</th><th>SL</th><th>TP</th><th>P/L</th><th>Action</th></tr></thead>
+     <tbody id="positions"><tr><td colspan="8">No open positions</td></tr></tbody>
+    </table>
+   </div>
+  </section>
 
-<div class="panel">
-<h3>Trade History</h3>
-<div class="scroll">
-<table>
-<thead><tr><th>Direction</th><th>Entry</th><th>Exit</th><th>P/L</th></tr></thead>
-<tbody id="history"><tr><td colspan="4">No trades yet</td></tr></tbody>
-</table>
-</div>
-</div>
+  <section class="panel">
+   <h3>Trade History</h3>
+   <div class="scroll">
+    <table>
+     <thead><tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>Result</th><th>Reason</th></tr></thead>
+     <tbody id="history"><tr><td colspan="6">No closed trades</td></tr></tbody>
+    </table>
+   </div>
+  </section>
+ </div>
+
+ <div>
+  <section class="panel">
+   <h3>Order Execution</h3>
+   <label>Position size (lots / units)</label>
+   <input id="size" type="number" value="0.01" min="0.01" step="0.01">
+   <label>Stop Loss price (optional)</label>
+   <input id="sl" type="number" step="any" placeholder="Enter price">
+   <label>Take Profit price (optional)</label>
+   <input id="tp" type="number" step="any" placeholder="Enter price">
+   <div class="controls" style="margin-top:15px">
+    <button class="buy full" id="buy">BUY</button>
+    <button class="sell full" id="sell">SELL</button>
+   </div>
+   <p class="notice">BUY opens at Ask. SELL opens at Bid. Positions close at the opposite quote. SL and TP are checked on each simulated price update.</p>
+  </section>
+
+  <section class="panel">
+   <h3>Account Analytics</h3>
+   <div class="metric"><small>Balance</small><strong id="balance">$10,000.00</strong></div>
+   <div class="metric" style="margin-top:8px"><small>Equity</small><strong id="equity">$10,000.00</strong></div>
+   <div class="metric" style="margin-top:8px"><small>Floating P/L</small><strong id="floating">$0.00</strong></div>
+   <div class="metric" style="margin-top:8px"><small>Closed P/L</small><strong id="closedPL">$0.00</strong></div>
+   <div class="metric" style="margin-top:8px"><small>Win Rate</small><strong id="winrate">0%</strong></div>
+   <div class="metric" style="margin-top:8px"><small>Closed Trades</small><strong id="tradecount">0</strong></div>
+   <button id="resetAccount" class="full" style="margin-top:12px">Reset Account</button>
+  </section>
+ </div>
+ </div>
+ <section class="panel">
+  <h3>System Status</h3>
+  <p class="muted" id="status">Simulation initialized.</p>
+  <p class="notice">Educational simulation only. Prices are randomly generated and are not real exchange quotes. No real orders are sent. Results are not evidence of live trading performance.</p>
+ </section>
+</main>
 
 <script>
-const canvas=document.getElementById("chart");
-const ctx=canvas.getContext("2d");
-let candles=[],index=0,timer=null,positions=[],history=[];
-let balance=10000;
-let wins=0,closed=0;
+"use strict";
 
-function generateData(){
- candles=[];
- let price=1.1000;
- for(let i=0;i<100;i++){
- let open=price;
- let change=(Math.random()-.48)*.003;
- let close=open+change;
- candles.push({
- open,close,
- high:Math.max(open,close)+Math.random()*.001,
- low:Math.min(open,close)-Math.random()*.001
- });
- price=close;
- }
+const $=id=>document.getElementById(id);
+const chart=$("chart"),ctx=chart.getContext("2d");
+
+const markets={
+ Forex:{EURUSD:{p:1.10000,s:.00015,d:5,m:100000},GBPUSD:{p:1.27000,s:.00020,d:5,m:100000},USDJPY:{p:150.000,s:.020,d:3,m:1000}},
+ Crypto:{BTCUSD:{p:65000,s:10,d:2,m:1},ETHUSD:{p:3500,s:1,d:2,m:1}},
+ Gold:{XAUUSD:{p:2650,s:.30,d:2,m:100}},
+ Indices:{US30:{p:42000,s:2,d:1,m:1},NAS100:{p:18500,s:1,d:1,m:1}},
+ Stocks:{AAPL:{p:220,s:.03,d:2,m:1},TSLA:{p:300,s:.05,d:2,m:1}}
+};
+
+let market="Forex",symbol="EURUSD",base=1.1,spread=.00015,digits=5,multiplier=100000;
+let candles=[],index=99,timer=null,positions=[],history=[];
+let balance=10000,closedPL=0,wins=0,closed=0;
+let show20=true,show50=true,showRSI=true;
+let lastTick=0;
+
+function round(n){return Number(n.toFixed(digits))}
+function quote(){
+ const close=candles[index]?.close??base;
+ return {bid:round(close-spread/2),ask:round(close+spread/2),last:round(close)};
 }
-
+function format(n){return Number(n).toFixed(digits)}
+function money(n){return (n<0?"-$":"$")+Math.abs(n).toFixed(2)}
+function generate(){
+ candles=[];
+ let p=base;
+ for(let i=0;i<100;i++){
+  let o=p,c=o+(Math.random()-.49)*base*.0015;
+  candles.push({open:o,close:c,high:Math.max(o,c)+Math.random()*base*.0005,low:Math.min(o,c)-Math.random()*base*.0005});
+  p=c;
+ }
+ index=99;
+}
+function ema(period){
+ let values=[],k=2/(period+1),e=candles[0]?.close??base;
+ candles.forEach((c,i)=>{e=i===0?c.close:c.close*k+e*(1-k);values.push(e)});
+ return values;
+}
+function rsi(){
+ let start=Math.max(1,index-13),g=0,l=0,n=0;
+ for(let i=start;i<=index;i++){
+  let d=candles[i].close-candles[i-1].close;
+  if(d>0)g+=d;else l-=d;n++;
+ }
+ if(!n)return 50;
+ if(!l)return 100;
+ return 100-100/(1+(g/n)/(l/n));
+}
 function resize(){
- const rect=canvas.getBoundingClientRect();
- const dpr=window.devicePixelRatio||1;
- canvas.width=rect.width*dpr;
- canvas.height=330*dpr;
- ctx.setTransform(dpr,0,0,dpr,0,0);
- draw();
+ let w=chart.clientWidth||320,h=340,d=window.devicePixelRatio||1;
+ chart.width=w*d;chart.height=h*d;
+ ctx.setTransform(d,0,0,d,0,0);draw();
 }
 function draw(){
- const w=canvas.clientWidth,h=330;
+ const w=chart.clientWidth||320,h=340;
  ctx.clearRect(0,0,w,h);
- let visible=candles.slice(0,index+1);
+ const visible=candles.slice(0,index+1);
  if(!visible.length)return;
- let min=Math.min(...visible.map(c=>c.low));
- let max=Math.max(...visible.map(c=>c.high));
- let range=max-min||.001;
- const y=p=>h-20-(p-min)/range*(h-40);
+ let lo=Math.min(...visible.map(c=>c.low)),hi=Math.max(...visible.map(c=>c.high));
+ positions.forEach(p=>{lo=Math.min(lo,p.entry,p.sl||lo,p.tp||lo);hi=Math.max(hi,p.entry,p.sl||hi,p.tp||hi)});
+ let pad=(hi-lo)*.1||base*.001;lo-=pad;hi+=pad;
+ const y=p=>h-22-(p-lo)/(hi-lo)*(h-44);
  const gap=w/Math.max(visible.length,1);
+ ctx.strokeStyle="#203149";ctx.lineWidth=1;
+ for(let j=0;j<5;j++){let yy=20+j*(h-40)/4;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke()}
  visible.forEach((c,i)=>{
- let x=i*gap+gap*.5;
- let up=c.close>=c.open;
- ctx.strokeStyle=up?"#22c55e":"#ef4444";
- ctx.fillStyle=ctx.strokeStyle;
- ctx.lineWidth=1;
- ctx.beginPath();
- ctx.moveTo(x,y(c.high));
- ctx.lineTo(x,y(c.low));
- ctx.stroke();
- let top=Math.min(y(c.open),y(c.close));
- let height=Math.max(2,Math.abs(y(c.open)-y(c.close)));
- ctx.fillRect(x-gap*.3,top,gap*.6,height);
+  let x=i*gap+gap/2,up=c.close>=c.open;
+  ctx.strokeStyle=up?"#22c55e":"#ef4444";ctx.fillStyle=ctx.strokeStyle;
+  ctx.beginPath();ctx.moveTo(x,y(c.high));ctx.lineTo(x,y(c.low));ctx.stroke();
+  ctx.fillRect(x-gap*.3,Math.min(y(c.open),y(c.close)),Math.max(2,gap*.6),Math.max(2,Math.abs(y(c.open)-y(c.close))));
  });
- ctx.fillStyle="#94a3b8";
- ctx.fillText("SIMULATED PRICE DATA",10,15);
- updateStats();
-}
-
-function resetReplay(){
- pause();generateData();index=0;
- positions=[];history=[];balance=10000;
- wins=0;closed=0;
- document.getElementById("history").innerHTML='<tr><td colspan="4">No trades yet</td></tr>';
- document.getElementById("status").textContent="SIMULATED REPLAY READY";
- document.getElementById("progress").value=0;
- draw();updateStats();
-}
-function step(){
- if(index<candles.length-1)index++;
- document.getElementById("progress").value=index;
- document.getElementById("candleInfo").textContent=
- "Candle "+(index+1)+" / "+candles.length+" | Price: "+candles[index].close.toFixed(5);
- draw();
-}
-function rewind(){
- pause();
- if(index>0)index--;
- document.getElementById("progress").value=index;
- draw();
-}
-function seek(value){
- pause();index=Number(value);draw();
-}
-function play(){
- if(timer)return;
- timer=setInterval(()=>{
- if(index>=candles.length-1){pause();return}
- step();
- },Number(document.getElementById("speed").value));
-}
-function pause(){
- clearInterval(timer);timer=null;
-}
-function trade(direction){
- const quantity=Number(document.getElementById("quantity").value);
- if(!quantity||quantity<=0)return alert("Enter a valid quantity");
- positions.push({direction,entry:candles[index].close,quantity});
- updateStats();
-}
-function closeTrade(){
- if(!positions.length)return alert("No open positions");
- const price=candles[index].close;
+ function line(values,color){
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
+  values.slice(0,index+1).forEach((v,i)=>{let x=i*gap+gap/2;if(i===0)ctx.moveTo(x,y(v));else ctx.lineTo(x,y(v))});
+  ctx.stroke();
+ }
+ if(show20)line(ema(20),"#fbbf24");
+ if(show50)line(ema(50),"#38bdf8");
+ const q=quote();
+ function horizontal(price,color,label,dash){
+  if(!price)return;
+  ctx.strokeStyle=color;ctx.setLineDash(dash?[5,4]:[]);
+  ctx.beginPath();ctx.moveTo(0,y(price));ctx.lineTo(w,y(price));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=color;ctx.fillText(label+" "+format(price),6,Math.max(12,y(price)-5));
+ }
+ horizontal(q.last,"#e2e8f0","PRICE",true);
  positions.forEach(p=>{
- let pnl=(p.direction==="BUY"?price-p.entry:p.entry-price)*p.quantity;
- balance+=pnl*10000;
- closed++;
- if(pnl>0)wins++;
- history.push({direction:p.direction,entry:p.entry,exit:price,pnl:pnl*10000});
+  horizontal(p.entry,p.side==="BUY"?"#22c55e":"#f87171",p.side+" ENTRY",false);
+  horizontal(p.sl,"#ef4444","STOP LOSS",true);
+  horizontal(p.tp,"#22c55e","TAKE PROFIT",true);
  });
- positions=[];
- renderHistory();updateStats();
+ ctx.fillStyle="#94a3b8";ctx.font="11px Arial";
+ ctx.fillText("SIMULATED "+symbol,8,14);
+ updateUI();
 }
-function renderHistory(){
- document.getElementById("history").innerHTML=history.map(t=>
- `<tr><td>${t.direction}</td><td>${t.entry.toFixed(5)}</td><td>${t.exit.toFixed(5)}</td><td>${t.pnl.toFixed(2)}</td></tr>`
- ).join("");
+function pnl(p){
+ const q=quote(),exit=p.side==="BUY"?q.bid:q.ask;
+ return (p.side==="BUY"?exit-p.entry:p.entry-exit)*p.size*multiplier;
 }
-function updateStats(){
- let price=candles[index]?.close||0;
- let pnl=positions.reduce((sum,p)=>sum+(p.direction==="BUY"?price-p.entry:p.entry-price)*p.quantity*10000,0);
- document.getElementById("balance").textContent="$"+balance.toFixed(2);
- document.getElementById("openPL").textContent="$"+pnl.toFixed(2);
- document.getElementById("closed").textContent=closed;
- document.getElementById("winrate").textContent=(closed?wins/closed*100:0).toFixed(1)+"%";
+function updateQuotes(){
+ const q=quote();
+ $("bid").textContent=format(q.bid);
+ $("ask").textContent=format(q.ask);
+ $("last").textContent=format(q.last);
+ $("spread").textContent=(spread/(base===0?1:base)* (market==="Forex"&&symbol!=="USDJPY"?10000:1)).toFixed(2)+(market==="Forex"?" pips":"");
+ $("chartTitle").textContent=symbol+" — "+$("timeframe").value+" — SIMULATION";
+ $("chartInfo").textContent="Candle "+(index+1)+" / "+candles.length+" | Last: "+format(q.last);
+ $("rsiValue").textContent=showRSI?"RSI (14): "+rsi().toFixed(1):"RSI hidden";
 }
+function updateUI(){
+ updateQuotes();
+ let float=positions.reduce((s,p)=>s+pnl(p),0);
+ $("balance").textContent=money(balance);
+ $("equity").textContent=money(balance+float);
+ $("floating").textContent=money(float);
+ $("closedPL").textContent=money(closedPL);
+ $("winrate").textContent=(closed?wins/closed*100:0).toFixed(1)+"%";
+ $("tradecount").textContent=closed;
+ $("floating").className=float>=0?"positive":"negative";
+ $("positions").innerHTML=positions.length?positions.map(p=>{
+  let v=pnl(p);
+  return `<tr><td>${p.symbol}</td><td>${p.side}</td><td>${p.size}</td><td>${format(p.entry)}</td><td>${p.sl?format(p.sl):"—"}</td><td>${p.tp?format(p.tp):"—"}</td><td class="${v>=0?"positive":"negative"}">${money(v)}</td><td><button class="close" onclick="closePosition(${p.id})">Close</button></td></tr>`;
+ }).join(""):'<tr><td colspan="8">No open positions</td></tr>';
+ $("history").innerHTML=history.length?history.slice().reverse().map(t=>
+ `<tr><td>${t.symbol}</td><td>${t.side}</td><td>${format(t.entry)}</td><td>${format(t.exit)}</td><td class="${t.pnl>=0?"positive":"negative"}">${money(t.pnl)}</td><td>${t.reason}</td></tr>`
+ ).join(""):'<tr><td colspan="6">No closed trades</td></tr>';
+}
+function execute(side){
+ const size=Number($("size").value),q=quote();
+ if(!Number.isFinite(size)||size<=0){alert("Enter a valid position size.");return}
+ const slText=$("sl").value,tpText=$("tp").value;
+ const sl=slText===""?null:Number(slText),tp=tpText===""?null:Number(tpText);
+ if((sl!==null&&!Number.isFinite(sl))||(tp!==null&&!Number.isFinite(tp))){alert("Check your Stop Loss and Take Profit prices.");return}
+ const entry=side==="BUY"?q.ask:q.bid;
+ if(sl!==null&&((side==="BUY"&&sl>=entry)||(side==="SELL"&&sl<=entry))){alert("Stop Loss must be below entry for BUY and above entry for SELL.");return}
+ if(tp!==null&&((side==="BUY"&&tp<=entry)||(side==="SELL"&&tp>=entry))){alert("Take Profit must be above entry for BUY and below entry for SELL.");return}
+ positions.push({id:Date.now()+Math.random(),symbol,side,size,entry,sl,tp,multiplier});
+ $("status").textContent=side+" position opened on "+symbol+" at "+format(entry);
+ draw();
+}
+function closePosition(id,reason="MANUAL"){
+ let i=positions.findIndex(p=>p.id===id);if(i<0)return;
+ const p=positions[i],q=quote(),exit=p.side==="BUY"?q.bid:q.ask;
+ const result=(p.side==="BUY"?exit-p.entry:p.entry-exit)*p.size*p.multiplier;
+ balance+=result;closedPL+=result;closed++;if(result>0)wins++;
+ history.push({...p,exit,pnl:result,reason});
+ positions.splice(i,1);
+ $("status").textContent=p.symbol+" "+p.side+" closed: "+money(result)+" ("+reason+")";
+ draw();
+}
+function checkStops(){
+ const q=quote();
+ positions.slice().forEach(p=>{
+  let hit=null;
+  if(p.side==="BUY"&&p.sl!==null&&q.bid<=p.sl)hit="STOP LOSS";
+  if(p.side==="BUY"&&p.tp!==null&&q.bid>=p.tp)hit="TAKE PROFIT";
+  if(p.side==="SELL"&&p.sl!==null&&q.ask>=p.sl)hit="STOP LOSS";
+  if(p.side==="SELL"&&p.tp!==null&&q.ask<=p.tp)hit="TAKE PROFIT";
+  if(hit)closePosition(p.id,hit);
+ });
+}
+function tick(){
+ let old=candles[index].close;
+ let move=(Math.random()-.5)*base*.00025;
+ let c=Math.max(base*.01,old+move);
+ candles[index].close=c;
+ candles[index].high=Math.max(candles[index].high,c);
+ candles[index].low=Math.min(candles[index].low,c);
+ lastTick++;
+ if(lastTick>=5){
+  lastTick=0;
+  let o=c;
+  candles.push({open:o,close:o,high:o,low:o});
+  index++;
+  if(candles.length>150){candles.shift();index--}
+ }
+ checkStops();draw();
+}
+function pause(){clearInterval(timer);timer=null}
+function play(){if(timer)return;timer=setInterval(tick,Number($("speed").value))}
+function resetSimulation(){
+ pause();generate();positions=[];history=[];balance=10000;closedPL=0;wins=0;closed=0;
+ $("progress").value=99;$("sl").value="";$("tp").value="";
+ $("status").textContent="New "+symbol+" simulation started.";
+ draw();
+}
+function selectMarket(){
+ market=$("market").value;
+ let first=Object.keys(markets[market])[0];
+ $("symbol").innerHTML=Object.keys(markets[market]).map(s=>`<option>${s}</option>`).join("");
+ $("symbol").value=first;selectSymbol();
+}
+function selectSymbol(){
+ symbol=$("symbol").value;
+ let item=markets[market][symbol];
+ base=item.p;spread=item.s;digits=item.d;multiplier=item.m;
+ resetSimulation();
+}
+$("market").addEventListener("change",selectMarket);
+$("symbol").addEventListener("change",selectSymbol);
+$("timeframe").addEventListener("change",draw);
+$("buy").addEventListener("click",()=>execute("BUY"));
+$("sell").addEventListener("click",()=>execute("SELL"));
+$("reset").addEventListener("click",resetSimulation);
+$("resetAccount").addEventListener("click",()=>{
+ if(!confirm("Reset account balance and all trade records?"))return;
+ balance=10000;closedPL=0;wins=0;closed=0;positions=[];history=[];draw();
+});
+$("play").addEventListener("click",play);
+$("pause").addEventListener("click",pause);
+$("next").addEventListener("click",()=>{pause();tick()});
+$("previous").addEventListener("click",()=>{
+ pause();if(index>0){index--;candles=candles.slice(0,index+1);draw()}
+});
+$("progress").addEventListener("input",e=>{
+ pause();let target=Number(e.target.value);
+ index=Math.max(0,Math.min(candles.length-1,target));draw();
+});
+$("ema20").addEventListener("click",()=>{show20=!show20;$("ema20").classList.toggle("active",show20);$("ema20").textContent="EMA 20: "+(show20?"ON":"OFF");draw()});
+$("ema50").addEventListener("click",()=>{show50=!show50;$("ema50").classList.toggle("active",show50);$("ema50").textContent="EMA 50: "+(show50?"ON":"OFF");draw()});
+$("rsiToggle").addEventListener("click",()=>{showRSI=!showRSI;$("rsiToggle").classList.toggle("active",showRSI);$("rsiToggle").textContent="RSI: "+(showRSI?"ON":"OFF");draw()});
+$("speed").addEventListener("change",()=>{if(timer){pause();play()}});
 window.addEventListener("resize",resize);
-generateData();index=0;
-resize();updateStats();
+
+generate();resize();draw();
 </script>
 </body>
-  </html>
-  
+ </html>
+ 
