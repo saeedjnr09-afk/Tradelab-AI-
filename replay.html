@@ -1,0 +1,239 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRADELAB AI - Historical Replay</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090e19;color:#e5e7eb;font-family:Arial,sans-serif;padding:18px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+h1{font-size:22px;color:#38bdf8}
+.panel{background:#111b2d;border:1px solid #25334a;border-radius:12px;padding:15px;margin-top:16px}
+.controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+button,select,input{background:#1d2b42;color:white;border:1px solid #344762;padding:11px;border-radius:7px}
+button{cursor:pointer}
+button:hover{background:#2563eb}
+#chart{width:100%;height:330px;background:#0b1423;border-radius:8px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:#1a2940;padding:13px;border-radius:8px}
+.stat small{color:#94a3b8}
+.stat strong{display:block;font-size:20px;margin-top:7px}
+.green{color:#22c55e}.red{color:#ef4444}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;padding:10px;border-bottom:1px solid #344762}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<header>
+<h1>TRADELAB AI</h1>
+<span>HISTORICAL REPLAY v1.0</span>
+</header>
+
+<div class="panel">
+<h3>Market Configuration</h3>
+<div class="controls">
+<select id="market">
+<option>Forex</option><option>Crypto</option>
+<option>Gold</option><option>Indices</option><option>Stocks</option>
+</select>
+<select id="symbol">
+<option>EURUSD</option><option>GBPUSD</option>
+<option>BTCUSD</option><option>XAUUSD</option>
+<option>US30</option><option>NASDAQ</option>
+</select>
+<select id="timeframe">
+<option>1 Minute</option><option>5 Minutes</option>
+<option>15 Minutes</option><option>1 Hour</option>
+<option>4 Hours</option><option>1 Day</option>
+</select>
+<button onclick="resetReplay()">Load Replay</button>
+</div>
+<p id="status">SIMULATED HISTORICAL DATA — NOT LIVE MARKET DATA</p>
+</div>
+
+<div class="panel">
+<h3>Price Chart</h3>
+<canvas id="chart"></canvas>
+<div class="controls">
+<button onclick="play()">▶ Play</button>
+<button onclick="pause()">Ⅱ Pause</button>
+<button onclick="step()">Next Candle →</button>
+<button onclick="rewind()">← Previous</button>
+<select id="speed">
+<option value="1000">1x</option>
+<option value="500">2x</option>
+<option value="200">5x</option>
+</select>
+</div>
+<input id="progress" type="range" min="0" max="99" value="0" style="width:100%;margin-top:15px" oninput="seek(this.value)">
+<p id="candleInfo">Waiting for replay...</p>
+</div>
+
+<div class="panel">
+<h3>Trading Simulator</h3>
+<div class="controls">
+<input id="quantity" type="number" value="1" min="0.01" step="0.01" placeholder="Quantity">
+<button onclick="trade('BUY')">BUY</button>
+<button onclick="trade('SELL')">SELL</button>
+<button onclick="closeTrade()">Close Position</button>
+</div>
+<p>Stop Loss / Take Profit are not yet enabled in this version.</p>
+</div>
+
+<div class="panel">
+<h3>Performance Dashboard</h3>
+<div class="stats">
+<div class="stat"><small>Account Balance</small><strong id="balance">$10,000</strong></div>
+<div class="stat"><small>Open P/L</small><strong id="openPL">$0.00</strong></div>
+<div class="stat"><small>Closed Trades</small><strong id="closed">0</strong></div>
+<div class="stat"><small>Win Rate</small><strong id="winrate">0%</strong></div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Trade History</h3>
+<div class="scroll">
+<table>
+<thead><tr><th>Direction</th><th>Entry</th><th>Exit</th><th>P/L</th></tr></thead>
+<tbody id="history"><tr><td colspan="4">No trades yet</td></tr></tbody>
+</table>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById("chart");
+const ctx=canvas.getContext("2d");
+let candles=[],index=0,timer=null,positions=[],history=[];
+let balance=10000;
+let wins=0,closed=0;
+
+function generateData(){
+ candles=[];
+ let price=1.1000;
+ for(let i=0;i<100;i++){
+ let open=price;
+ let change=(Math.random()-.48)*.003;
+ let close=open+change;
+ candles.push({
+ open,close,
+ high:Math.max(open,close)+Math.random()*.001,
+ low:Math.min(open,close)-Math.random()*.001
+ });
+ price=close;
+ }
+}
+
+function resize(){
+ const rect=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=rect.width*dpr;
+ canvas.height=330*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ draw();
+}
+function draw(){
+ const w=canvas.clientWidth,h=330;
+ ctx.clearRect(0,0,w,h);
+ let visible=candles.slice(0,index+1);
+ if(!visible.length)return;
+ let min=Math.min(...visible.map(c=>c.low));
+ let max=Math.max(...visible.map(c=>c.high));
+ let range=max-min||.001;
+ const y=p=>h-20-(p-min)/range*(h-40);
+ const gap=w/Math.max(visible.length,1);
+ visible.forEach((c,i)=>{
+ let x=i*gap+gap*.5;
+ let up=c.close>=c.open;
+ ctx.strokeStyle=up?"#22c55e":"#ef4444";
+ ctx.fillStyle=ctx.strokeStyle;
+ ctx.lineWidth=1;
+ ctx.beginPath();
+ ctx.moveTo(x,y(c.high));
+ ctx.lineTo(x,y(c.low));
+ ctx.stroke();
+ let top=Math.min(y(c.open),y(c.close));
+ let height=Math.max(2,Math.abs(y(c.open)-y(c.close)));
+ ctx.fillRect(x-gap*.3,top,gap*.6,height);
+ });
+ ctx.fillStyle="#94a3b8";
+ ctx.fillText("SIMULATED PRICE DATA",10,15);
+ updateStats();
+}
+
+function resetReplay(){
+ pause();generateData();index=0;
+ positions=[];history=[];balance=10000;
+ wins=0;closed=0;
+ document.getElementById("history").innerHTML='<tr><td colspan="4">No trades yet</td></tr>';
+ document.getElementById("status").textContent="SIMULATED REPLAY READY";
+ document.getElementById("progress").value=0;
+ draw();updateStats();
+}
+function step(){
+ if(index<candles.length-1)index++;
+ document.getElementById("progress").value=index;
+ document.getElementById("candleInfo").textContent=
+ "Candle "+(index+1)+" / "+candles.length+" | Price: "+candles[index].close.toFixed(5);
+ draw();
+}
+function rewind(){
+ pause();
+ if(index>0)index--;
+ document.getElementById("progress").value=index;
+ draw();
+}
+function seek(value){
+ pause();index=Number(value);draw();
+}
+function play(){
+ if(timer)return;
+ timer=setInterval(()=>{
+ if(index>=candles.length-1){pause();return}
+ step();
+ },Number(document.getElementById("speed").value));
+}
+function pause(){
+ clearInterval(timer);timer=null;
+}
+function trade(direction){
+ const quantity=Number(document.getElementById("quantity").value);
+ if(!quantity||quantity<=0)return alert("Enter a valid quantity");
+ positions.push({direction,entry:candles[index].close,quantity});
+ updateStats();
+}
+function closeTrade(){
+ if(!positions.length)return alert("No open positions");
+ const price=candles[index].close;
+ positions.forEach(p=>{
+ let pnl=(p.direction==="BUY"?price-p.entry:p.entry-price)*p.quantity;
+ balance+=pnl*10000;
+ closed++;
+ if(pnl>0)wins++;
+ history.push({direction:p.direction,entry:p.entry,exit:price,pnl:pnl*10000});
+ });
+ positions=[];
+ renderHistory();updateStats();
+}
+function renderHistory(){
+ document.getElementById("history").innerHTML=history.map(t=>
+ `<tr><td>${t.direction}</td><td>${t.entry.toFixed(5)}</td><td>${t.exit.toFixed(5)}</td><td>${t.pnl.toFixed(2)}</td></tr>`
+ ).join("");
+}
+function updateStats(){
+ let price=candles[index]?.close||0;
+ let pnl=positions.reduce((sum,p)=>sum+(p.direction==="BUY"?price-p.entry:p.entry-price)*p.quantity*10000,0);
+ document.getElementById("balance").textContent="$"+balance.toFixed(2);
+ document.getElementById("openPL").textContent="$"+pnl.toFixed(2);
+ document.getElementById("closed").textContent=closed;
+ document.getElementById("winrate").textContent=(closed?wins/closed*100:0).toFixed(1)+"%";
+}
+window.addEventListener("resize",resize);
+generateData();index=0;
+resize();updateStats();
+</script>
+</body>
+  </html>
+  
