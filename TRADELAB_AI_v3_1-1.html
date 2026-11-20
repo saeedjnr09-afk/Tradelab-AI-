@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d18">
+<title>TRADELAB AI | Trading Terminal v3.1</title>
+<style>
+:root{--bg:#080d18;--panel:#101a2b;--panel2:#142239;--line:#293b55;--muted:#91a2b9;--blue:#38bdf8;--green:#22c55e;--red:#f87171;--amber:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#e5e7eb;font:14px Arial,sans-serif}
+header{background:#0e192a;border-bottom:1px solid var(--line);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-size:22px;font-weight:800;letter-spacing:.4px;color:var(--blue)}
+.sub{font-size:11px;color:var(--muted);margin-top:4px}
+.pill{font-size:11px;border:1px solid #23664c;color:#67e8a5;border-radius:20px;padding:6px 10px}
+main{max-width:1600px;margin:auto;padding:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:12px;min-width:0}
+h3{font-size:14px;margin:0 0 12px;letter-spacing:.2px}
+h4{font-size:13px;margin:0 0 9px;color:#cbd5e1}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select,input,button{background:#1a2a41;color:#f1f5f9;border:1px solid #3a506e;border-radius:7px;padding:9px 10px;font-size:12px;max-width:100%}
+input[type=file]{max-width:100%;font-size:11px}
+button{cursor:pointer}
+button:hover{border-color:var(--blue);background:#213a59}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.active{background:#15558a;border-color:#38bdf8}
+.buy{background:#087c59;border-color:#087c59;font-weight:bold}
+.sell{background:#a92f43;border-color:#a92f43;font-weight:bold}
+.danger{background:#702c3a;border-color:#9b3b4c}
+.primary{background:#15558a;border-color:#2779b7}
+.muted{color:var(--muted)}
+.notice{color:#fbbf24;font-size:11px;line-height:1.5}
+.small{font-size:11px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.metric,.quote{background:#0b1627;border:1px solid #1e3049;padding:11px;border-radius:8px;min-width:0}
+.metric small,.quote small{display:block;color:var(--muted);font-size:11px;margin-bottom:6px}
+.metric strong,.quote strong{font-size:18px;display:block;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.bid{color:#fb7185}.ask{color:#34d399}.positive{color:#34d399!important}.negative{color:#fb7185!important}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+#chartWrap{position:relative;width:100%;background:#081321;border:1px solid #1d2e45;border-radius:8px;overflow:hidden}
+#chart{display:block;width:100%;height:420px;touch-action:pan-y}
+.charttools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.charttools button{padding:7px 9px;font-size:11px}
+.chart-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:11px}
+input[type=range]{padding:0;accent-color:#38bdf8}
+.full{width:100%}
+label{display:block;color:var(--muted);font-size:11px;margin:9px 0 5px}
+input[type=number]{width:100%}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.scroll{overflow:auto}
+table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px}
+td,th{text-align:left;padding:9px 7px;border-bottom:1px solid #293b55}
+th{color:var(--muted);font-weight:600}
+.statusbox{padding:10px;border-radius:7px;background:#0b1627;border:1px solid #253a56;color:#cbd5e1;font-size:12px;line-height:1.5}
+.signal{font-weight:bold}
+.signal.buySignal{color:#34d399}.signal.sellSignal{color:#fb7185}.signal.wait{color:#fbbf24}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{padding:8px 11px}
+.section-hidden{display:none}
+.footer{font-size:10px;color:#71839c;line-height:1.5;padding:5px 2px 20px}
+@media(min-width:900px){main{padding:18px}.layout{grid-template-columns:minmax(0,1fr) 315px}.grid.quotes{grid-template-columns:repeat(4,minmax(0,1fr))}#chart{height:470px}}
+</style>
+</head>
+<body>
+<header>
+ <div><div class="brand">TRADELAB AI</div><div class="sub">TRADING TERMINAL v3.1 · APA STRATEGY LAB</div></div>
+ <div class="controls"><span class="pill">● SIMULATION / BACKTEST</span><span class="muted small" id="dataMode">Generated demo data</span></div>
+</header>
+<main>
+ <section class="panel">
+  <h3>Market & Chart Configuration</h3>
+  <div class="controls">
+   <select id="market"><option>Forex</option><option>Crypto</option><option>Gold</option><option>Indices</option><option>Stocks</option></select>
+   <select id="symbol"><option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>BTCUSD</option><option>ETHUSD</option><option>XAUUSD</option><option>US30</option><option>NAS100</option><option>AAPL</option><option>TSLA</option></select>
+   <select id="timeframe"><option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h">1H</option><option value="4h">4H</option><option value="1d">1D</option></select>
+   <button id="resetMarket">Reset Demo</button>
+  </div>
+ </section>
+ <section class="grid quotes">
+  <div class="quote"><small>BID · SELL PRICE</small><strong class="bid" id="bid">—</strong></div>
+  <div class="quote"><small>ASK · BUY PRICE</small><strong class="ask" id="ask">—</strong></div>
+  <div class="metric"><small>Spread</small><strong id="spread">—</strong></div>
+  <div class="metric"><small>Last Price</small><strong id="last">—</strong></div>
+ </section>
+ <div class="layout" style="margin-top:12px">
+  <div>
+   <section class="panel">
+    <h3 id="chartTitle">EURUSD · 1m · Price Chart</h3>
+    <div class="charttools">
+     <button id="ema20" class="active">EMA 20 ON</button><button id="ema50" class="active">EMA 50 ON</button>
+     <button id="swingToggle" class="active">Swing levels ON</button><button id="rsiToggle">RSI panel OFF</button>
+     <button id="toolCross" class="active">Crosshair</button><button id="toolLine">Trendline tool</button><button id="clearDrawings">Clear drawings</button>
+    </div>
+    <div id="chartWrap"><canvas id="chart"></canvas></div>
+    <div class="chart-meta"><span id="chartInfo">Loading chart…</span><span id="cursorInfo">Select a drawing tool to annotate the chart.</span></div>
+    <div class="controls" style="margin-top:10px">
+     <button id="play">▶ Play</button><button id="pause">Ⅱ Pause</button><button id="next">Next candle →</button><button id="previous">← Previous</button>
+     <select id="speed"><option value="1000">1× speed</option><option value="500">2× speed</option><option value="200">5× speed</option></select>
+     <button id="zoomIn">Zoom +</button><button id="zoomOut">Zoom −</button>
+    </div>
+    <input id="progress" class="full" type="range" min="0" max="99" value="99" style="margin-top:12px">
+    <div class="chart-meta"><span id="rsiValue">RSI (14): —</span><span>Drag chart to pan; use mouse-wheel or zoom buttons to adjust candle density.</span></div>
+   </section>
+   <section class="panel">
+    <h3>Backtesting Studio</h3>
+    <div class="tabs"><button class="tab active" data-tab="csvPanel">Historical CSV</button><button class="tab" data-tab="manualPanel">Manual Replay</button><button class="tab" data-tab="autoPanel">APA Auto-Test</button></div>
+    <div id="csvPanel">
+     <div class="controls"><input id="csvFile" type="file" accept=".csv,text/csv"><button id="loadCSV" class="primary">Load CSV</button><button id="clearCSV" class="danger">Clear CSV</button></div>
+     <p class="notice">CSV columns required: Open, High, Low, Close. Optional columns: Date/Time/Timestamp and Volume. Headers are case-insensitive. Use chronological order (oldest first). Timeframe aggregation assumes the uploaded source candles are 1-minute candles.</p>
+     <div class="statusbox" id="csvStatus">No historical file loaded. Demo candles are currently displayed.</div>
+    </div>
+    <div id="manualPanel" class="section-hidden">
+     <p class="muted small">Manual replay lets you advance through the loaded candles and place simulated trades at the replay price.</p>
+     <div class="controls"><button id="manualBuy" class="buy">Manual BUY</button><button id="manualSell" class="sell">Manual SELL</button><button id="manualClose" class="danger">Close manual position</button></div>
+     <p class="small muted" id="manualStatus">No manual trade opened.</p>
+    </div>
+    <div id="autoPanel" class="section-hidden">
+     <div class="two">
+      <div><label>APA BOS confirmation</label><select id="bosMode"><option value="close">Candle close</option><option value="wick">Wick break</option></select></div>
+      <div><label>Pivot lookback</label><select id="pivotLookback"><option value="3">3 candles</option><option value="5" selected>5 candles</option><option value="7">7 candles</option></select></div>
+     </div>
+     <div class="controls" style="margin-top:10px"><button id="scanAPA" class="primary">Scan current setup</button><button id="runBacktest" class="buy">Run APA backtest</button></div>
+     <div class="statusbox" id="apaResult" style="margin-top:10px">APA engine ready. Load historical candles or use demo data, then scan.</div>
+     <p class="notice">APA signals are rule-based approximations of the lesson concepts, not a guaranteed reproduction of an instructor's discretionary decisions.</p>
+    </div>
+   </section>
+   <section class="panel">
+    <h3>Open Positions</h3><div class="scroll"><table><thead><tr><th>Symbol</th><th>Side</th><th>Size</th><th>Entry</th><th>Stop</th><th>Target</th><th>Floating P/L</th><th>Action</th></tr></thead><tbody id="positions"><tr><td colspan="8">No open positions</td></tr></tbody></table></div>
+   </section>
+   <section class="panel">
+    <h3>Trade History & Backtest Results</h3><div class="scroll"><table><thead><tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P/L</th><th>R</th><th>Reason</th></tr></thead><tbody id="history"><tr><td colspan="7">No closed trades</td></tr></tbody></table></div>
+   </section>
+  </div>
+  <aside>
+   <section class="panel">
+    <h3>Order Execution</h3>
+    <label>Position size (lots / units)</label><input id="size" type="number" value="0.01" min="0.0001" step="0.01">
+    <div class="two"><div><label>Stop Loss price</label><input id="sl" type="number" step="any" placeholder="Optional"></div><div><label>Take Profit price</label><input id="tp" type="number" step="any" placeholder="Optional"></div></div>
+    <div class="controls" style="margin-top:12px"><button class="buy full" id="buy">BUY</button><button class="sell full" id="sell">SELL</button></div>
+    <p class="notice">BUY opens at Ask and closes at Bid. SELL opens at Bid and closes at Ask. SL/TP are evaluated candle-by-candle during replay. For candles where both SL and TP fall inside the same bar, conservative stop-first handling is used.</p>
+   </section>
+   <section class="panel">
+    <h3>Account Analytics</h3>
+    <div class="grid">
+     <div class="metric"><small>Balance</small><strong id="balance">$10,000.00</strong></div><div class="metric"><small>Equity</small><strong id="equity">$10,000.00</strong></div>
+     <div class="metric"><small>Floating P/L</small><strong id="floating">$0.00</strong></div><div class="metric"><small>Closed P/L</small><strong id="closedPL">$0.00</strong></div>
+     <div class="metric"><small>Win rate</small><strong id="winrate">0%</strong></div><div class="metric"><small>Closed trades</small><strong id="tradecount">0</strong></div>
+    </div>
+    <button id="resetAccount" class="full danger" style="margin-top:10px">Reset account & records</button>
+   </section>
+   <section class="panel">
+    <h3>APA Strategy Engine</h3>
+    <div class="statusbox" id="apaQuick">Waiting for a chart scan.</div>
+    <p class="small muted" style="margin-bottom:0">Checks trend structure, break of structure, retest proximity, liquidity sweep and candle momentum. Use higher timeframes for directional context and lower timeframes to refine entries.</p>
+   </section>
+   <section class="panel">
+    <h3>Performance Metrics</h3>
+    <div class="metric"><small>Profit factor</small><strong id="profitFactor">—</strong></div>
+    <div class="metric" style="margin-top:8px"><small>Maximum drawdown</small><strong id="maxDD">0.00%</strong></div>
+    <div class="metric" style="margin-top:8px"><small>Average R multiple</small><strong id="avgR">—</strong></div>
+    <div class="metric" style="margin-top:8px"><small>Expectancy / trade</small><strong id="expectancy">—</strong></div>
+   </section>
+  </aside>
+ </div>
+ <section class="panel">
+  <h3>System Status</h3><div class="statusbox" id="status">TRADELAB AI v3.1 initialized. Timeframe aggregation, replay-safe charting and isolated backtests enabled.</div>
+  <p class="notice">Educational simulation only. Generated prices are synthetic. CSV results depend on the quality and accuracy of the uploaded data. No live exchange feed or real orders are connected. Backtest performance does not predict future results.</p>
+ </section>
+ <div class="footer">TRADELAB AI is an independent trading research and simulation project. The interface is inspired by common professional charting workflows; it is not TradingView and does not use TradingView proprietary code, data or branding.</div>
+</main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const chart=$("chart"),ctx=chart.getContext("2d");
+const markets={
+ Forex:{EURUSD:{p:1.10000,s:.00015,d:5,m:100000},GBPUSD:{p:1.27000,s:.00020,d:5,m:100000},USDJPY:{p:150,s:.020,d:3,m:1000}},
+ Crypto:{BTCUSD:{p:65000,s:10,d:2,m:1},ETHUSD:{p:3500,s:1,d:2,m:1}},
+ Gold:{XAUUSD:{p:2650,s:.30,d:2,m:100}},
+ Indices:{US30:{p:42000,s:2,d:1,m:1},NAS100:{p:18500,s:1,d:1,m:1}},
+ Stocks:{AAPL:{p:220,s:.03,d:2,m:1},TSLA:{p:300,s:.05,d:2,m:1}}
+};
+let market="Forex",symbol="EURUSD",base=1.1,spread=.00015,digits=5,multiplier=100000;
+let candles=[],sourceCandles=[],index=99,timer=null,positions=[],history=[],balance=10000,closedPL=0,wins=0,closed=0;
+let show20=true,show50=true,showSwing=true,showRSI=false,zoom=1,pan=0,drawMode="cross",drawings=[],pendingPoint=null,crosshairPoint=null;
+let dataSource="Generated demo data",manualPositionId=null,backtestTrades=[];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const round=n=>Number(n.toFixed(digits));
+const format=n=>Number(n).toFixed(digits);
+const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2);
+function quote(){let c=candles[index]?.close??base;return {bid:round(c-spread/2),ask:round(c+spread/2),last:round(c)}}
+function timeframeMinutes(){return ({"1m":1,"5m":5,"15m":15,"1h":60,"4h":240,"1d":1440})[$("timeframe").value]||1}
+function aggregateCandles(input,minutes){
+ if(minutes<=1)return input.slice();
+ const step=minutes*60000,buckets=new Map();
+ input.forEach((c,i)=>{let parsed=Date.parse(c.time),key=Number.isFinite(parsed)?Math.floor(parsed/step):Math.floor(i/minutes);let item=buckets.get(key);if(!item)buckets.set(key,{time:c.time,open:c.open,high:c.high,low:c.low,close:c.close,volume:Number(c.volume)||0,sourceEnd:i});else{item.high=Math.max(item.high,c.high);item.low=Math.min(item.low,c.low);item.close=c.close;item.volume+=(Number(c.volume)||0);item.sourceEnd=i}});
+ return Array.from(buckets.values());
+}
+function setTimeframe(){
+ const oldCount=candles.length,ratio=oldCount>1?index/(oldCount-1):1;
+ candles=aggregateCandles(sourceCandles,timeframeMinutes());
+ index=clamp(Math.round(ratio*Math.max(0,candles.length-1)),0,Math.max(0,candles.length-1));
+ pan=0;pause();draw();$("status").textContent="Chart timeframe changed to "+$("timeframe").value+". Candles were aggregated from the source data.";
+}
+function seedDemo(){
+ candles=[];let p=base;
+ for(let i=0;i<300;i++){let o=p,drift=Math.sin(i/19)*base*.000025,change=drift+(Math.random()-.49)*base*.0012,c=o+change;
+ let wick=base*(.00012+Math.random()*.00035);
+ candles.push({time:new Date(Date.UTC(2025,0,1)+i*60000).toISOString(),open:o,high:Math.max(o,c)+Math.random()*wick,low:Math.min(o,c)-Math.random()*wick,close:c,volume:Math.round(100+Math.random()*900)});p=c}
+ sourceCandles=candles.slice();candles=aggregateCandles(sourceCandles,timeframeMinutes());index=candles.length-1;pan=0;dataSource="Generated demo data";$("dataMode").textContent=dataSource;$("csvStatus").textContent="Demo candles active. Upload a CSV to use your own historical data.";
+}
+function ema(period,source=candles){let out=[],k=2/(period+1),e=source[0]?.close??base;source.forEach((c,i)=>{e=i===0?c.close:c.close*k+e*(1-k);out.push(e)});return out}
+function calcRSI(at=index,period=14){if(at<period)return 50;let gain=0,loss=0;for(let i=at-period+1;i<=at;i++){let d=candles[i].close-candles[i-1].close;if(d>0)gain+=d;else loss-=d}if(loss===0)return 100;let rs=(gain/period)/(loss/period);return 100-100/(1+rs)}
+function visibleRange(){let count=Math.max(25,Math.floor(100/zoom)),end=clamp(index+1-pan,1,Math.min(candles.length,index+1)),start=Math.max(0,end-count);return {start,end,count:end-start}}
+function resize(){let w=chart.clientWidth||320,h=showRSI?500:420,d=window.devicePixelRatio||1;chart.style.height=h+"px";chart.width=w*d;chart.height=h*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+function draw(){
+ const w=chart.clientWidth||320,h=showRSI?500:420;ctx.clearRect(0,0,w,h);
+ if(!candles.length)return;
+ const r=visibleRange(),data=candles.slice(r.start,r.end);if(!data.length)return;
+ const chartH=showRSI?365:h-30;
+ let lo=Math.min(...data.map(c=>c.low)),hi=Math.max(...data.map(c=>c.high));
+ positions.forEach(p=>{lo=Math.min(lo,p.entry,p.sl??lo,p.tp??lo);hi=Math.max(hi,p.entry,p.sl??hi,p.tp??hi)});
+ const pad=(hi-lo)*.09||base*.001;lo-=pad;hi+=pad;
+ const y=p=>chartH-22-(p-lo)/(hi-lo)*(chartH-44),gap=w/data.length;
+ ctx.font="10px Arial";ctx.strokeStyle="#1d3048";ctx.lineWidth=1;
+ for(let j=0;j<6;j++){let yy=18+j*(chartH-36)/5;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke();ctx.fillStyle="#71839b";ctx.fillText(format(hi-(hi-lo)*j/5),w-76,yy-3)}
+ data.forEach((c,i)=>{let x=i*gap+gap/2,up=c.close>=c.open,col=up?"#22c55e":"#ef4444";ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.high));ctx.lineTo(x,y(c.low));ctx.stroke();let top=Math.min(y(c.open),y(c.close)),bh=Math.max(1.5,Math.abs(y(c.open)-y(c.close)));ctx.fillRect(x-Math.max(1,gap*.31),top,Math.max(2,gap*.62),bh)});
+ function drawLine(values,color,width=1.5){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();let started=false;values.forEach((v,i)=>{let abs=i;if(abs<r.start||abs>=r.end)return;let x=(abs-r.start+.5)*gap;if(!started){ctx.moveTo(x,y(v));started=true}else ctx.lineTo(x,y(v))});if(started)ctx.stroke()}
+ if(show20)drawLine(ema(20),"#fbbf24");if(show50)drawLine(ema(50),"#38bdf8");
+ if(showSwing){let piv=getPivots(index,4);ctx.setLineDash([4,4]);ctx.strokeStyle="#a78bfa";[piv.lastHigh,piv.lastLow].forEach(v=>{if(v){ctx.beginPath();ctx.moveTo(0,y(v));ctx.lineTo(w,y(v));ctx.stroke()}});ctx.setLineDash([])}
+ const q=quote();function horizontal(price,color,label,dash=true){if(price==null||!Number.isFinite(price))return;ctx.strokeStyle=color;ctx.setLineDash(dash?[5,4]:[]);ctx.beginPath();ctx.moveTo(0,y(price));ctx.lineTo(w,y(price));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.fillText(label+" "+format(price),7,clamp(y(price)-5,12,chartH-3))}
+ horizontal(q.last,"#e2e8f0","LAST");
+ positions.forEach(p=>{horizontal(p.entry,p.side==="BUY"?"#22c55e":"#fb7185",p.side+" ENTRY",false);horizontal(p.sl,"#ef4444","STOP LOSS");horizontal(p.tp,"#22c55e","TAKE PROFIT")});
+ drawings.forEach(d=>{ctx.strokeStyle="#fbbf24";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(d.x1,d.y1);ctx.lineTo(d.x2,d.y2);ctx.stroke()});
+ ctx.fillStyle="#91a2b9";ctx.fillText("TRADELAB AI · "+symbol+" · "+$("timeframe").value,8,13);
+ if(showRSI){let top=chartH+15,bottom=h-20;ctx.strokeStyle="#34445d";ctx.beginPath();ctx.moveTo(0,top);ctx.lineTo(w,top);ctx.stroke();[30,50,70].forEach(v=>{let yy=bottom-(v/100)*(bottom-top);ctx.strokeStyle="#34445d";ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#91a2b9";ctx.fillText(String(v),4,yy-2)});let vals=[];for(let i=r.start;i<r.end;i++)vals.push({i,v:calcRSI(i)});ctx.strokeStyle="#c084fc";ctx.lineWidth=1.5;ctx.beginPath();vals.forEach((a,j)=>{let x=(a.i-r.start+.5)*gap,yy=bottom-a.v/100*(bottom-top);if(j===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)});ctx.stroke()}
+ if(drawMode==="cross"&&crosshairPoint){ctx.save();ctx.strokeStyle="#94a3b8";ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(crosshairPoint.x,0);ctx.lineTo(crosshairPoint.x,chartH);ctx.moveTo(0,crosshairPoint.y);ctx.lineTo(w,crosshairPoint.y);ctx.stroke();ctx.restore()}
+ updateUI();
+}
+function getPivots(at=index,lb=5){
+ let highs=[],lows=[];for(let i=lb;i<at-lb;i++){let hi=true,lo=true;for(let j=i-lb;j<=i+lb;j++){if(j===i)continue;if(candles[j].high>=candles[i].high)hi=false;if(candles[j].low<=candles[i].low)lo=false}if(hi)highs.push({i,p:candles[i].high});if(lo)lows.push({i,p:candles[i].low})}
+ return {highs,lows,lastHigh:highs.at(-1)?.p??null,lastLow:lows.at(-1)?.p??null,prevHigh:highs.at(-2)?.p??null,prevLow:lows.at(-2)?.p??null};
+}
+function updateQuotes(){let q=quote();$("bid").textContent=format(q.bid);$("ask").textContent=format(q.ask);$("last").textContent=format(q.last);$("spread").textContent=market==="Forex"?(spread*(symbol==="USDJPY"?100:10000)).toFixed(1)+" pips":format(spread)+" price units";$("chartTitle").textContent=symbol+" · "+$("timeframe").value+" · "+(dataSource.includes("CSV")?"HISTORICAL":"SIMULATED");$("chartInfo").textContent="Candle "+(index+1)+" / "+candles.length+" · "+(candles[index]?.time??"")+" · "+format(q.last);$("progress").max=Math.max(1,candles.length-1);$("progress").value=index;$("rsiValue").textContent="RSI (14): "+calcRSI().toFixed(1)}
+function positionPnL(p){let q=quote(),exit=p.side==="BUY"?q.bid:q.ask;return (p.side==="BUY"?exit-p.entry:p.entry-exit)*p.size*p.multiplier}
+function metrics(){
+ let net=history.reduce((s,t)=>s+t.pnl,0),grossWin=history.filter(t=>t.pnl>0).reduce((s,t)=>s+t.pnl,0),grossLoss=Math.abs(history.filter(t=>t.pnl<0).reduce((s,t)=>s+t.pnl,0));
+ let rs=history.filter(t=>Number.isFinite(t.r)).map(t=>t.r),avgR=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:null;
+ let peak=10000,eq=10000,maxDD=0;history.forEach(t=>{eq+=t.pnl;peak=Math.max(peak,eq);maxDD=Math.max(maxDD,(peak-eq)/peak*100)});
+ $("profitFactor").textContent=grossLoss? (grossWin/grossLoss).toFixed(2):grossWin?"∞":"—";$("maxDD").textContent=maxDD.toFixed(2)+"%";$("avgR").textContent=avgR===null?"—":avgR.toFixed(2)+"R";$("expectancy").textContent=history.length?money(net/history.length):"—";
+}
+function updateUI(){
+ updateQuotes();let floating=positions.reduce((s,p)=>s+positionPnL(p),0);
+ $("balance").textContent=money(balance);$("equity").textContent=money(balance+floating);$("floating").textContent=money(floating);$("closedPL").textContent=money(closedPL);$("winrate").textContent=(closed?wins/closed*100:0).toFixed(1)+"%";$("tradecount").textContent=closed;$("floating").className=floating>=0?"positive":"negative";
+ $("positions").innerHTML=positions.length?positions.map(p=>{let v=positionPnL(p);return `<tr><td>${p.symbol}</td><td>${p.side}</td><td>${p.size}</td><td>${format(p.entry)}</td><td>${p.sl==null?"—":format(p.sl)}</td><td>${p.tp==null?"—":format(p.tp)}</td><td class="${v>=0?"positive":"negative"}">${money(v)}</td><td><button class="danger" onclick="closePosition('${p.id}')">Close</button></td></tr>`}).join(""):'<tr><td colspan="8">No open positions</td></tr>';
+ $("history").innerHTML=history.length?history.slice().reverse().slice(0,150).map(t=>`<tr><td>${t.symbol}</td><td>${t.side}</td><td>${format(t.entry)}</td><td>${format(t.exit)}</td><td class="${t.pnl>=0?"positive":"negative"}">${money(t.pnl)}</td><td>${Number.isFinite(t.r)?t.r.toFixed(2)+"R":"—"}</td><td>${t.reason}</td></tr>`).join(""):'<tr><td colspan="7">No closed trades</td></tr>';metrics();
+}
+function openPosition(side,source="MANUAL"){
+ let size=Number($("size").value);if(!Number.isFinite(size)||size<=0){alert("Enter a valid position size.");return}
+ let q=quote(),entry=side==="BUY"?q.ask:q.bid,sl=$("sl").value===""?null:Number($("sl").value),tp=$("tp").value===""?null:Number($("tp").value);
+ if(sl!==null&&!Number.isFinite(sl)||tp!==null&&!Number.isFinite(tp)){alert("Check SL and TP values.");return}
+ if(sl!==null&&((side==="BUY"&&sl>=entry)||(side==="SELL"&&sl<=entry))){alert("BUY stop must be below entry; SELL stop must be above entry.");return}
+ if(tp!==null&&((side==="BUY"&&tp<=entry)||(side==="SELL"&&tp>=entry))){alert("BUY target must be above entry; SELL target must be below entry.");return}
+ let risk=sl===null?null:Math.abs(entry-sl)*size*multiplier;
+ let p={id:String(Date.now())+Math.random().toString(16).slice(2),symbol,side,size,entry,sl,tp,multiplier,risk,source};positions.push(p);$("status").textContent=source+" "+side+" opened on "+symbol+" at "+format(entry);draw();return p;
+}
+function closePosition(id,reason="MANUAL"){
+ let i=positions.findIndex(p=>p.id===id);if(i<0)return;let p=positions[i],q=quote(),exit=p.side==="BUY"?q.bid:q.ask,result=(p.side==="BUY"?exit-p.entry:p.entry-exit)*p.size*p.multiplier,r=p.risk?result/p.risk:null;
+ balance+=result;closedPL+=result;closed++;if(result>0)wins++;history.push({...p,exit,pnl:result,r,reason});positions.splice(i,1);
+ if(manualPositionId===p.id)manualPositionId=null;$("status").textContent=p.symbol+" "+p.side+" closed: "+money(result)+" ("+reason+")";draw();
+}
+function checkStops(bar=null){
+ let q=quote();positions.slice().forEach(p=>{let hit=null;
+ if(bar){if(p.side==="BUY"){if(p.sl!=null&&bar.low<=p.sl)hit="STOP LOSS";else if(p.tp!=null&&bar.high>=p.tp)hit="TAKE PROFIT"}else{if(p.sl!=null&&bar.high>=p.sl)hit="STOP LOSS";else if(p.tp!=null&&bar.low<=p.tp)hit="TAKE PROFIT"}}
+ else{if(p.side==="BUY"&&p.sl!=null&&q.bid<=p.sl)hit="STOP LOSS";else if(p.side==="BUY"&&p.tp!=null&&q.bid>=p.tp)hit="TAKE PROFIT";else if(p.side==="SELL"&&p.sl!=null&&q.ask>=p.sl)hit="STOP LOSS";else if(p.side==="SELL"&&p.tp!=null&&q.ask<=p.tp)hit="TAKE PROFIT"}
+ if(hit)closePosition(p.id,hit);
+ });
+}
+function tick(){
+ if(index>=candles.length-1){pause();$("status").textContent="Replay reached the final candle.";return}
+ index++;pan=Math.min(pan,index);let c=candles[index];checkStops(c);draw();
+}
+function pause(){clearInterval(timer);timer=null}
+function play(){if(timer)return;timer=setInterval(tick,Number($("speed").value))}
+function resetAccount(){if(!confirm("Reset account balance and all positions/trade records?"))return;balance=10000;closedPL=0;wins=0;closed=0;positions=[];history=[];manualPositionId=null;backtestTrades=[];$("manualStatus").textContent="No manual trade opened.";draw()}
+function resetDemo(){pause();let item=markets[market][symbol];base=item.p;spread=item.s;digits=item.d;multiplier=item.m;seedDemo();positions=[];history=[];backtestTrades=[];balance=10000;closedPL=0;wins=0;closed=0;manualPositionId=null;drawings=[];pendingPoint=null;crosshairPoint=null;pan=0;zoom=1;$("manualStatus").textContent="No manual trade opened.";draw();$("status").textContent="New simulated "+symbol+" dataset generated."}
+function selectMarket(){market=$("market").value;let syms=Object.keys(markets[market]);$("symbol").innerHTML=syms.map(s=>`<option>${s}</option>`).join("");$("symbol").value=syms[0];selectSymbol()}
+function selectSymbol(){symbol=$("symbol").value;let it=markets[market][symbol];base=it.p;spread=it.s;digits=it.d;multiplier=it.m;resetDemo()}
+function parseCSV(text){
+ let rows=[],row=[],field="",quoted=false;
+ for(let i=0;i<text.length;i++){let ch=text[i],next=text[i+1];if(ch==='"'&&quoted&&next==='"'){field+='"';i++}else if(ch==='"'){quoted=!quoted}else if(ch===","&&!quoted){row.push(field.trim());field=""}else if((ch==="\n"||ch==="\r")&&!quoted){if(ch==="\r"&&next==="\n")i++;row.push(field.trim());if(row.some(x=>x!==""))rows.push(row);row=[];field=""}else field+=ch}
+ row.push(field.trim());if(row.some(x=>x!==""))rows.push(row);if(rows.length<2)throw Error("CSV needs a header row and at least one data row.");
+ let headers=rows[0].map(x=>x.toLowerCase().replace(/[^a-z0-9]/g,""));
+ function col(names){return headers.findIndex(h=>names.includes(h))}
+ let oi=col(["open","o"]),hi=col(["high","h"]),li=col(["low","l"]),ci=col(["close","c","last"]),ti=col(["time","date","datetime","timestamp"]),vi=col(["volume","vol","v"]);
+ if([oi,hi,li,ci].some(i=>i<0))throw Error("Required headers not found. Include Open, High, Low and Close.");
+ let out=[];for(let n=1;n<rows.length;n++){let r=rows[n],num=i=>Number(String(r[i]??"").replace(/,/g,""));let o=num(oi),h=num(hi),l=num(li),c=num(ci);if(![o,h,l,c].every(Number.isFinite)||Math.min(o,h,l,c)<=0)continue;if(h<Math.max(o,c)||l>Math.min(o,c)||h<l)continue;out.push({time:ti>=0?r[ti]:String(n),open:o,high:h,low:l,close:c,volume:vi>=0?num(vi):0})}
+ if(out.length<10)throw Error("Only "+out.length+" valid candles found. At least 10 valid rows are required.");
+ for(let n=1;n<out.length;n++){let previous=Date.parse(out[n-1].time),current=Date.parse(out[n].time);if(Number.isFinite(previous)&&Number.isFinite(current)&&current<previous)throw Error("CSV candles must be in chronological order (oldest first).")}
+ return out;
+}
+async function loadCSV(){let file=$("csvFile").files[0];if(!file){$("csvStatus").textContent="Choose a CSV file first.";return}try{pause();let parsed=parseCSV(await file.text());sourceCandles=parsed;candles=aggregateCandles(sourceCandles,timeframeMinutes());index=0;positions=[];history=[];backtestTrades=[];balance=10000;closedPL=0;wins=0;closed=0;manualPositionId=null;dataSource="Historical CSV: "+file.name;$("dataMode").textContent="Historical CSV";$("csvStatus").textContent="Loaded "+parsed.length+" candles from "+file.name+". Oldest candle is first. Use replay controls to move through the data.";$("progress").max=parsed.length-1;$("progress").value=0;$("status").textContent="Historical CSV loaded successfully: "+parsed.length+" candles.";draw()}catch(e){$("csvStatus").textContent="CSV error: "+e.message}}
+function clearCSV(){pause();$("csvFile").value="";seedDemo();index=0;positions=[];history=[];backtestTrades=[];balance=10000;closedPL=0;wins=0;closed=0;manualPositionId=null;drawings=[];pan=0;zoom=1;$("manualStatus").textContent="No manual trade opened.";$("status").textContent="Historical CSV cleared. Demo data restored.";draw()}
+function manualTrade(side){if(manualPositionId){$("manualStatus").textContent="Close the current manual position before opening another.";return}let p=openPosition(side,"MANUAL REPLAY");if(p){manualPositionId=p.id;$("manualStatus").textContent="Manual "+side+" opened at "+format(p.entry)+"."}}
+function closeManual(){if(!manualPositionId){$("manualStatus").textContent="No manual replay position is open.";return}closePosition(manualPositionId,"MANUAL REPLAY CLOSE");$("manualStatus").textContent="Manual position closed."}
+function scanAPA(at=index){
+ if(at<30)return {side:"WAIT",score:0,explain:"Not enough candles for reliable structure analysis.",details:[]};
+ let lb=Number($("pivotLookback").value),piv=getPivots(at,lb),bar=candles[at],prev=candles[at-1],mode=$("bosMode").value;
+ let bullBreak=piv.lastHigh!=null&&(mode==="close"?bar.close>piv.lastHigh:bar.high>piv.lastHigh),bearBreak=piv.lastLow!=null&&(mode==="close"?bar.close<piv.lastLow:bar.low<piv.lastLow);
+ let side=bullBreak?"BUY":bearBreak?"SELL":"WAIT",details=[],score=0;
+ let trendUp=piv.prevHigh!=null&&piv.prevLow!=null&&piv.lastHigh>piv.prevHigh&&piv.lastLow>piv.prevLow;
+ let trendDown=piv.prevHigh!=null&&piv.prevLow!=null&&piv.lastHigh<piv.prevHigh&&piv.lastLow<piv.prevLow;
+ if(trendUp){details.push("Recent swing structure is making higher highs / higher lows.");score++}else if(trendDown){details.push("Recent swing structure is making lower highs / lower lows.");score++}else details.push("Trend structure is mixed or not yet confirmed.");
+ if(side!=="WAIT"){details.push((mode==="close"?"Candle close":"Wick")+" broke the latest confirmed "+(side==="BUY"?"swing high":"swing low")+".");score+=2}else details.push("No confirmed break of the latest swing level.");
+ let range=bar.high-bar.low,body=Math.abs(bar.close-bar.open),momentum=range>0&&body/range>.65;
+ if(momentum&&((side==="BUY"&&bar.close>bar.open)||(side==="SELL"&&bar.close<bar.open))){details.push("Strong directional candle body supports momentum.");score++}else details.push("Strong directional momentum candle not confirmed.");
+ let sweptLow=bar.low<Math.min(prev.low,piv.lastLow??prev.low)&&bar.close>prev.low;
+ let sweptHigh=bar.high>Math.max(prev.high,piv.lastHigh??prev.high)&&bar.close<prev.high;
+ if((side==="BUY"&&sweptLow)||(side==="SELL"&&sweptHigh)){details.push("Possible liquidity sweep before the directional move.");score++}else details.push("No clear same-candle liquidity sweep detected.");
+ let ema20=ema(20)[at],ema50=ema(50)[at],aligned=(side==="BUY"&&ema20>ema50)||(side==="SELL"&&ema20<ema50);
+ if(aligned){details.push("EMA 20 / EMA 50 direction agrees with the setup.");score++}else details.push("EMA trend alignment is absent or mixed.");
+ let prevLevel=side==="BUY"?piv.lastHigh:piv.lastLow,nearRetest=prevLevel!=null&&Math.abs(bar.close-prevLevel)<=Math.max(range*1.5,base*.0005);
+ if(side!=="WAIT"&&nearRetest){details.push("Price is near the broken structure: possible retest area.");score++}else details.push("A clean structure retest is not confirmed on this candle.");
+ let grade=score>=5?"A":score>=4?"B":score>=3?"C":"LOW";
+ let entry=bar.close,sl=side==="BUY"?bar.low:side==="SELL"?bar.high:null,tp=side==="BUY"?entry+(entry-sl)*2:side==="SELL"?entry-(sl-entry)*2:null;
+ return {side,score,grade,entry,sl,tp,details,trend:trendUp?"Bullish":trendDown?"Bearish":"Mixed",level:prevLevel};
+}
+function renderAPA(){let a=scanAPA();let html=`<b class="signal ${a.side==="BUY"?"buySignal":a.side==="SELL"?"sellSignal":"wait"}">${a.side} · Grade ${a.grade} · ${a.score}/6 checks</b><br>${a.details.map(x=>"• "+x).join("<br>")}`;if(a.side!=="WAIT")html+=`<br><br>Reference entry: ${format(a.entry)} · Invalidation: ${format(a.sl)} · Illustrative 2R target: ${format(a.tp)}`;$("apaResult").innerHTML=html;$("apaQuick").innerHTML=html}
+function runAPABacktest(){
+ pause();if(candles.length<50){alert("Load at least 50 candles before running the APA backtest.");return}
+ let start=30,sim=[],equity=10000,peak=equity,maxdd=0,open=null,lb=Number($("pivotLookback").value),mode=$("bosMode").value;
+ for(let i=start;i<candles.length;i++){
+  let b=candles[i],prev=candles[i-1],piv=getPivots(i,lb);if(open){let exit=null,reason="";if(open.side==="BUY"){if(b.low<=open.sl){exit=open.sl;reason="STOP LOSS"}else if(b.high>=open.tp){exit=open.tp;reason="TAKE PROFIT"}}else{if(b.high>=open.sl){exit=open.sl;reason="STOP LOSS"}else if(b.low<=open.tp){exit=open.tp;reason="TAKE PROFIT"}}
+   if(exit!==null){let pnl=(open.side==="BUY"?exit-open.entry:open.entry-exit)*open.size*multiplier;let risk=Math.abs(open.entry-open.sl)*open.size*multiplier;sim.push({symbol,side:open.side,entry:open.entry,exit,pnl,r:risk?pnl/risk:null,reason});equity+=pnl;peak=Math.max(peak,equity);maxdd=Math.max(maxdd,(peak-equity)/peak*100);open=null}continue}
+  let brUp=piv.lastHigh!=null&&(mode==="close"?b.close>piv.lastHigh:b.high>piv.lastHigh),brDn=piv.lastLow!=null&&(mode==="close"?b.close<piv.lastLow:b.low<piv.lastLow);
+  let bullTrend=piv.prevHigh!=null&&piv.prevLow!=null&&piv.lastHigh>piv.prevHigh&&piv.lastLow>piv.prevLow,bearTrend=piv.prevHigh!=null&&piv.prevLow!=null&&piv.lastHigh<piv.prevHigh&&piv.lastLow<piv.prevLow;
+  let body=Math.abs(b.close-b.open),rng=b.high-b.low,momentum=rng>0&&body/rng>.55;
+  if(brUp&&b.close>b.open&&momentum&&bullTrend){let entry=b.close+spread/2,sl=b.low-spread,tp=entry+(entry-sl)*2;if(entry>sl)open={side:"BUY",entry,sl,tp,size:Number($("size").value)||.01}}
+  else if(brDn&&b.close<b.open&&momentum&&bearTrend){let entry=b.close-spread/2,sl=b.high+spread,tp=entry-(sl-entry)*2;if(entry<sl)open={side:"SELL",entry,sl,tp,size:Number($("size").value)||.01}}
+ }
+ let grossW=sim.filter(t=>t.pnl>0).reduce((s,t)=>s+t.pnl,0),grossL=Math.abs(sim.filter(t=>t.pnl<0).reduce((s,t)=>s+t.pnl,0)),wr=sim.length?sim.filter(t=>t.pnl>0).length/sim.length*100:0,pf=grossL?grossW/grossL:grossW?Infinity:0;
+ backtestTrades=sim;
+ $("apaResult").innerHTML=`<b>APA historical test complete</b><br>Trades: ${sim.length} · Win rate: ${wr.toFixed(1)}% · Profit factor: ${Number.isFinite(pf)?pf.toFixed(2):"∞"}<br>Net P/L: ${money(sim.reduce((s,t)=>s+t.pnl,0))} · Max drawdown: ${maxdd.toFixed(2)}%<br><span class="muted">Separate from your demo account. Rule-based approximation; spread is included in entries, but extra commission/slippage is not modelled. An open trade at the final candle is excluded.</span><br><br><b>Recent APA test trades</b><div class="scroll"><table><thead><tr><th>Side</th><th>Entry</th><th>Exit</th><th>P/L</th><th>R</th><th>Exit reason</th></tr></thead><tbody>${sim.slice(-20).reverse().map(t=>`<tr><td>${t.side}</td><td>${format(t.entry)}</td><td>${format(t.exit)}</td><td>${money(t.pnl)}</td><td>${Number.isFinite(t.r)?t.r.toFixed(2)+"R":"—"}</td><td>${t.reason}</td></tr>`).join("")||'<tr><td colspan="6">No completed APA trades</td></tr>'}</tbody></table></div>`;$("status").textContent="APA backtest completed over "+candles.length+" candles.";draw();
+}
+function tabSwitch(id){["csvPanel","manualPanel","autoPanel"].forEach(x=>$(x).classList.toggle("section-hidden",x!==id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id))}
+function chartXY(e){let r=chart.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+let pointerDown=null,dragMoved=false;
+chart.addEventListener("pointerdown",e=>{let p=chartXY(e);pointerDown=p;dragMoved=false;if(drawMode==="line"){pendingPoint=p;chart.setPointerCapture(e.pointerId)}});
+chart.addEventListener("pointerup",e=>{if(drawMode==="line"&&pendingPoint){let p=chartXY(e);drawings.push({x1:pendingPoint.x,y1:pendingPoint.y,x2:p.x,y2:p.y});pendingPoint=null;draw()}pointerDown=null});
+chart.addEventListener("pointercancel",()=>{pointerDown=null;pendingPoint=null});
+chart.addEventListener("pointermove",e=>{let p=chartXY(e);crosshairPoint=p;$("cursorInfo").textContent="Crosshair · x: "+Math.round(p.x)+" · y: "+Math.round(p.y);if(drawMode==="cross"&&pointerDown&&e.buttons){let dx=p.x-pointerDown.x;if(Math.abs(dx)>2){let count=Math.max(25,Math.floor(100/zoom));pan=clamp(pan-Math.round(dx/(chart.clientWidth/count)),0,Math.max(0,index));pointerDown=p;dragMoved=true}}draw()});
+chart.addEventListener("pointerleave",()=>{if(!pointerDown){crosshairPoint=null;draw()}});
+chart.addEventListener("wheel",e=>{e.preventDefault();zoom=clamp(zoom*(e.deltaY<0?1.12:.89),.5,5);draw()},{passive:false});
+$("market").addEventListener("change",selectMarket);$("symbol").addEventListener("change",selectSymbol);$("timeframe").addEventListener("change",setTimeframe);
+$("buy").addEventListener("click",()=>openPosition("BUY"));$("sell").addEventListener("click",()=>openPosition("SELL"));
+$("resetMarket").addEventListener("click",resetDemo);$("resetAccount").addEventListener("click",resetAccount);
+$("play").addEventListener("click",play);$("pause").addEventListener("click",pause);$("next").addEventListener("click",()=>{pause();tick()});
+$("previous").addEventListener("click",()=>{pause();index=Math.max(0,index-1);pan=Math.min(pan,index);draw()});
+$("progress").addEventListener("input",e=>{pause();index=clamp(Number(e.target.value),0,candles.length-1);pan=Math.min(pan,index);draw()});
+$("speed").addEventListener("change",()=>{if(timer){pause();play()}});
+$("ema20").addEventListener("click",()=>{show20=!show20;$("ema20").classList.toggle("active",show20);$("ema20").textContent="EMA 20 "+(show20?"ON":"OFF");draw()});
+$("ema50").addEventListener("click",()=>{show50=!show50;$("ema50").classList.toggle("active",show50);$("ema50").textContent="EMA 50 "+(show50?"ON":"OFF");draw()});
+$("swingToggle").addEventListener("click",()=>{showSwing=!showSwing;$("swingToggle").classList.toggle("active",showSwing);$("swingToggle").textContent="Swing levels "+(showSwing?"ON":"OFF");draw()});
+$("rsiToggle").addEventListener("click",()=>{showRSI=!showRSI;$("rsiToggle").classList.toggle("active",showRSI);$("rsiToggle").textContent="RSI panel "+(showRSI?"ON":"OFF");resize()});
+$("toolCross").addEventListener("click",()=>{drawMode="cross";$("toolCross").classList.add("active");$("toolLine").classList.remove("active")});
+$("toolLine").addEventListener("click",()=>{drawMode="line";$("toolLine").classList.add("active");$("toolCross").classList.remove("active")});
+$("clearDrawings").addEventListener("click",()=>{drawings=[];draw()});
+$("zoomIn").addEventListener("click",()=>{zoom=clamp(zoom*1.25,.5,4);draw()});$("zoomOut").addEventListener("click",()=>{zoom=clamp(zoom/1.25,.5,4);draw()});
+$("loadCSV").addEventListener("click",loadCSV);$("clearCSV").addEventListener("click",clearCSV);
+$("manualBuy").addEventListener("click",()=>manualTrade("BUY"));$("manualSell").addEventListener("click",()=>manualTrade("SELL"));$("manualClose").addEventListener("click",closeManual);
+$("scanAPA").addEventListener("click",renderAPA);$("runBacktest").addEventListener("click",runAPABacktest);
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>tabSwitch(b.dataset.tab)));
+window.addEventListener("resize",resize);
+seedDemo();resize();draw();
+</script>
+</body>
+</html>
